@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.assignment4"
-        minSdk = 24
+        minSdk = 33
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
@@ -47,7 +47,7 @@ dependencies {
 
     // Added
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
-
+    implementation("com.github.polarofficial:polar-ble-sdk:<version>")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
