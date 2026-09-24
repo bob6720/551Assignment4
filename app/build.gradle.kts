@@ -47,7 +47,11 @@ dependencies {
 
     // Added
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
-    implementation("com.github.polarofficial:polar-ble-sdk:<version>")
+
+    //latest sdk as of 24/09/26
+    val sdk_version = "8.3.0"
+    implementation("com.github.polarofficial:polar-ble-sdk:${sdk_version}")
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
