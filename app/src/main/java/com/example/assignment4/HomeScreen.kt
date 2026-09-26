@@ -9,12 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.assignment4.R
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onStartListening: () -> Unit = {}
+    onStartListening: () -> Unit = {},
+    connectionStatus: String = "",
+    device: String = ""
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background image
@@ -46,6 +47,13 @@ fun HomeScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
+                Button(onClick = {}) {
+                    if (connectionStatus == "connected") {
+                        Text(text = "Connected to $device")
+                    } else {
+                        Text(text = connectionStatus)
+                    }
+                }
                 Button(onClick = onStartListening) {
                     Text("Start Listening")
                 }
