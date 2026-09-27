@@ -14,6 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import androidx.room3.Room
+import androidx.sqlite.driver.AndroidSQLiteDriver
+import com.example.assignment4.Viewmodels.ApplicationViewModel
 import com.example.assignment4.ui.theme.Assignment4Theme
 import com.polar.androidcommunications.api.ble.model.DisInfo
 import com.polar.androidcommunications.api.ble.model.gatt.client.ChargeState
@@ -58,9 +61,23 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private lateinit var db : ExerciseDataStore;
+
+    private lateinit var exerciseDao: ExerciseDao;
+
+    private lateinit var viewModel : ApplicationViewModel;
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        db = Room.databaseBuilder<ExerciseDataStore>(applicationContext, "workout-data")
+            .setDriver(AndroidSQLiteDriver())
+            .build()
+
+        exerciseDao = db.exerciseDao()
+
+        viewModel = ApplicationViewModel(exerciseDao)
 
         setupPolarCallback()
 
@@ -69,6 +86,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     HomeScreen(
                         modifier = Modifier.padding(innerPadding),
+                        viewModel,
                         onStartListening = {
                             Log.w(TAG, "connecting sensor")
                             connectToDevice()
