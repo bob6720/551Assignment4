@@ -1,33 +1,29 @@
 package com.example.assignment4
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.example.assignment4.Viewmodels.ApplicationViewModel
-import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @Composable
-fun HistoryScreen(
+fun ActiveScreen(
     modifier: Modifier = Modifier,
     viewModel: ApplicationViewModel,
 )
 {
-    val historicWorkouts = viewModel.historicWorkouts.collectAsState()
-
-    LazyColumn(modifier = modifier.fillMaxWidth().background(color = Color.White))
+    LazyColumn(modifier = modifier.fillMaxWidth().fillMaxHeight().background(color = Color.White))
     {
         val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
 
@@ -39,19 +35,17 @@ fun HistoryScreen(
         }
 
         item {
-            Text(text = "Previous Workouts")
-        }
+            val rolling_hr = viewModel.rollingHR.collectAsState()
 
-        items(historicWorkouts.value.size)
-        {
-            val workout = historicWorkouts.value[it]
-
-            val start_time_label = timestamp_converter.format(Instant.ofEpochMilli(workout.startTimeStamp))
-            val end_time_label = timestamp_converter.format(Instant.ofEpochMilli(workout.endTimeStamp))
-
-            Button(onClick = { viewModel.SwitchToFinishedWorkout(workout) })
-            {
-                Text(text = String.format("Workout %d (%s-%s)", workout.id, start_time_label, end_time_label))
+            Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+                val path = Path()
+                val maxValue = 180
+                rolling_hr.value.forEachIndexed { index, value ->
+                    val x = index * (size.width / (rolling_hr.value.size - 1))
+                    val y = size.height - (value / maxValue) * size.height
+                    if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(path, Color.Blue, style = Stroke(width = 3f))
             }
         }
     }

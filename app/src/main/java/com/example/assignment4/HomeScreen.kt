@@ -83,6 +83,11 @@ fun HomeScreen(
                     }
                 }
 
+                Button(onClick = { viewModel.SwitchToActive() })
+                {
+                    Text("Current Workout")
+                }
+
                 Button(onClick = { viewModel.SwitchToHistory() })
                 {
                     Text("History")

@@ -4,12 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDao
+import com.example.assignment4.ExerciseDataCalculator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-enum class ActiveScreen { HOME_SCREEN, HISTORY_SCREEN }
+enum class ActiveScreen { HOME_SCREEN, HISTORY_SCREEN, ACTIVE_SCREEN, FINISHED_WORKOUT_SCREEN }
 
 class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 {
@@ -22,7 +23,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
     var debug_thread_running = false;
     var debug_data_gen_thread : Thread? = null;
 
-
     fun StartWorkout()
     {
         viewModelScope.launch(Dispatchers.IO)
@@ -30,14 +30,15 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
             active_workout = exerciseDao.startWorkout(System.currentTimeMillis())
             is_workout_active.value = true
 
-            debug_thread_running = true;
 
+            debug_thread_running = true;
             debug_data_gen_thread = Thread {
                 while(debug_thread_running)
                 {
                     Thread.sleep(100)
 
-                    exerciseDao.insertHRSample(active_workout?.id ?: 0, System.currentTimeMillis(), (60..100).random().toFloat())
+                    InsertHRSample(active_workout?.id ?: 0, System.currentTimeMillis(), (60..100).random().toFloat())
+                    InsertAccelSample(active_workout?.id ?: 0, System.currentTimeMillis(), (0..100).random().toFloat(), (0..100).random().toFloat(), 1000 + (0..100).random().toFloat())
                 }
             }
             debug_data_gen_thread?.start()
@@ -75,6 +76,27 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         active_screen.value = ActiveScreen.HISTORY_SCREEN
     }
 
+    fun SwitchToActive()
+    {
+        active_screen.value = ActiveScreen.ACTIVE_SCREEN
+    }
+
+    fun SwitchToFinishedWorkout(workout: Workout)
+    {
+        if(is_workout_active.value)
+        {
+            StopWorkout()
+        }
+
+        active_workout = workout
+        active_screen.value = ActiveScreen.FINISHED_WORKOUT_SCREEN
+    }
+
+    fun GetActiveWorkout() : Workout?
+    {
+        return active_workout;
+    }
+
     private var historic_workouts = MutableStateFlow<List<Workout>>(List(0,  { Workout(0, 0L, 0L, 0.0f, 0.0f, 0.0f) }));
     val historicWorkouts = historic_workouts.asStateFlow()
 
@@ -84,6 +106,21 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         {
             historic_workouts.value = exerciseDao.getCompletedWorkouts()
         }
+    }
+
+    val ROLLING_HR_WINDOW_SIZE = 10;
+    private var rolling_hr = MutableStateFlow(List(ROLLING_HR_WINDOW_SIZE, { 0.0f }));
+    val rollingHR = rolling_hr.asStateFlow()
+    private fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
+    {
+        exerciseDao.insertHRSample(workout_id, time_stamp, value)
+        rolling_hr.value = rolling_hr.value.drop(1) + value
+    }
+
+    private fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
+    {
+        val enmo = ExerciseDataCalculator.calculateENMO(value_x, value_y, value_z)
+        exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
     }
 
 }

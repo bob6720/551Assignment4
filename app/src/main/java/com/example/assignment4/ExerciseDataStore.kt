@@ -5,12 +5,14 @@ import androidx.room3.Database
 import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.Transaction
+import com.example.assignment4.Entities.AccelSample
+import com.example.assignment4.Entities.AccelSampleTuple
 import com.example.assignment4.Entities.HR_Sample
 import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, Workout::class], version = 2)
+@Database(entities = [HR_Sample::class, AccelSample::class, Workout::class], version = 3)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -24,6 +26,12 @@ interface ExerciseDao
 
     @Query("INSERT INTO HR_Sample (workout_id, time_stamp, value) VALUES (:workout_id, :time_stamp, :value)")
     fun insertHRSample(workout_id: Int, time_stamp: Long, value: Float)
+
+    @Query("SELECT time_stamp, value_x, value_y, value_z, enmo FROM AccelSample where workout_id = :workout_id")
+    fun getAccelSamples(workout_id: Int): List<AccelSampleTuple>
+
+    @Query("INSERT INTO AccelSample (workout_id, time_stamp, value_x, value_y, value_z, enmo) VALUES (:workout_id, :time_stamp, :value_x, :value_y, :value_z, :enmo)")
+    fun insertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float, enmo: Float)
 
     @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min) VALUES (:time_stamp, :time_stamp, 0, 0, 0)")
     fun insertWorkout(time_stamp: Long)
@@ -79,5 +87,9 @@ object ExerciseDataCalculator
         workout.hrMin = min.toFloat()
     }
 
+    fun calculateENMO(x: Float, y: Float, z: Float): Float
+    {
+        return Math.max(Math.sqrt(Math.pow(x.toDouble(), 2.0) + Math.pow(y.toDouble(), 2.0) + Math.pow(z.toDouble(), 2.0)).toFloat() - 1000.0f, 0.0f)
+    }
 
 }
