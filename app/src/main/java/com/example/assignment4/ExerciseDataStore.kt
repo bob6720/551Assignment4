@@ -7,12 +7,14 @@ import androidx.room3.RoomDatabase
 import androidx.room3.Transaction
 import com.example.assignment4.Entities.AccelSample
 import com.example.assignment4.Entities.AccelSampleTuple
+import com.example.assignment4.Entities.ECG_Sample
+import com.example.assignment4.Entities.ECG_SampleTuple
 import com.example.assignment4.Entities.HR_Sample
 import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, AccelSample::class, Workout::class], version = 3)
+@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 3)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -32,6 +34,12 @@ interface ExerciseDao
 
     @Query("INSERT INTO AccelSample (workout_id, time_stamp, value_x, value_y, value_z, enmo) VALUES (:workout_id, :time_stamp, :value_x, :value_y, :value_z, :enmo)")
     fun insertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float, enmo: Float)
+
+    @Query("INSERT INTO ECG_Sample (workout_id, time_stamp, value_mv) VALUES (:workout_id, :time_stamp, :value_mv)")
+    fun insertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
+
+    @Query("SELECT time_stamp, value_mv FROM ECG_Sample where workout_id = :workout_id")
+    fun getECGSamples(workout_id: Int): List<ECG_SampleTuple>
 
     @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min) VALUES (:time_stamp, :time_stamp, 0, 0, 0)")
     fun insertWorkout(time_stamp: Long)
@@ -73,7 +81,7 @@ object ExerciseDataCalculator
     {
         var average = 0.0;
         var max = 0.0;
-        var min = 0.0;
+        var min = Double.MAX_VALUE;
 
         for (sample in samples)
         {

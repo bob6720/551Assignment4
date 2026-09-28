@@ -33,12 +33,25 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 
             debug_thread_running = true;
             debug_data_gen_thread = Thread {
+                var ecg_tick = 0;
+
                 while(debug_thread_running)
                 {
                     Thread.sleep(100)
 
                     InsertHRSample(active_workout?.id ?: 0, System.currentTimeMillis(), (60..100).random().toFloat())
                     InsertAccelSample(active_workout?.id ?: 0, System.currentTimeMillis(), (0..100).random().toFloat(), (0..100).random().toFloat(), 1000 + (0..100).random().toFloat())
+
+                    val is_wave_stage = ecg_tick > 700
+
+                    var ecg_value_mv = 0.1f;
+                    if(is_wave_stage)
+                    {
+                        val tick_progress = ((ecg_tick - 700).toDouble() * Math.PI.toDouble()) / 300.0;
+                        ecg_value_mv += (Math.sin(tick_progress) * 1.2).toFloat()
+                    }
+
+                    InsertECGSample(active_workout?.id ?: 0, System.currentTimeMillis(), ecg_value_mv)
                 }
             }
             debug_data_gen_thread?.start()
@@ -61,6 +74,8 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
             exerciseDao.stopWorkout(workout, stop_time)
             is_workout_active.value = false
             active_workout = null
+
+            historic_workouts.value = exerciseDao.getCompletedWorkouts()
         }
 
         // Todo(Leo): Once this is done and stats have been calculated refresh historic_workouts.
@@ -121,6 +136,11 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
     {
         val enmo = ExerciseDataCalculator.calculateENMO(value_x, value_y, value_z)
         exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
+    }
+
+    private fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
+    {
+        exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
     }
 
 }
