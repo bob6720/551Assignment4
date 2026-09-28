@@ -11,7 +11,7 @@ data class Workout(
     @ColumnInfo(name = "end_time_stamp") val endTimeStamp: Long,
 
     // Calculated once the workout ends
-    @ColumnInfo(name = "hr_average") val hrAverage: Float,
-    @ColumnInfo(name = "hr_max") val hrMax: Float,
-    @ColumnInfo(name = "hr_min") val hrMin: Float,
+    @ColumnInfo(name = "hr_average") var hrAverage: Float,
+    @ColumnInfo(name = "hr_max") var hrMax: Float,
+    @ColumnInfo(name = "hr_min") var hrMin: Float,
 )

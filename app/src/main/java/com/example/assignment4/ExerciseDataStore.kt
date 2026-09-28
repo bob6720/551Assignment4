@@ -8,8 +8,9 @@ import androidx.room3.Transaction
 import com.example.assignment4.Entities.HR_Sample
 import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
+import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, Workout::class], version = 1)
+@Database(entities = [HR_Sample::class, Workout::class], version = 2)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -38,6 +39,45 @@ interface ExerciseDao
     }
 
     @Query("UPDATE Workout SET end_time_stamp = :time_stamp WHERE id = :workout_id")
-    fun stopWorkout(workout_id: Int, time_stamp: Long)
+    fun insertWorkoutStopTime(workout_id: Int, time_stamp: Long)
+
+    @Query("UPDATE Workout SET hr_average = :average_hr, hr_max = :max_hr, hr_min = :min_hr WHERE id = :workout_id")
+    fun insertWorkoutStats(workout_id: Int, average_hr: Float, max_hr: Float, min_hr: Float)
+
+    @Transaction
+    fun stopWorkout(workout: Workout, time_stamp: Long)
+    {
+        insertWorkoutStopTime(workout.id, time_stamp)
+        val samples = getHRSamples(workout.id)
+        calculateWorkoutStats(workout, samples)
+
+        insertWorkoutStats(workout.id, workout.hrAverage, workout.hrMax, workout.hrMin)
+    }
+
+    @Query("SELECT * FROM Workout WHERE start_time_stamp < end_time_stamp")
+    fun getCompletedWorkouts(): List<Workout>
+
+}
+
+object ExerciseDataCalculator
+{
+    fun calculateWorkoutStats(workout: Workout, samples: List<HR_SampleTuple>)
+    {
+        var average = 0.0;
+        var max = 0.0;
+        var min = 0.0;
+
+        for (sample in samples)
+        {
+            average += sample.value / samples.size
+            max = Math.max(max, sample.value.toDouble())
+            min = Math.min(min, sample.value.toDouble())
+        }
+
+        workout.hrAverage = average.toFloat()
+        workout.hrMax = max.toFloat()
+        workout.hrMin = min.toFloat()
+    }
+
 
 }

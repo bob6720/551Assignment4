@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.room3.Room
 import androidx.sqlite.driver.AndroidSQLiteDriver
+import com.example.assignment4.Viewmodels.ActiveScreen
 import com.example.assignment4.Viewmodels.ApplicationViewModel
 import com.example.assignment4.ui.theme.Assignment4Theme
 import com.polar.androidcommunications.api.ble.model.DisInfo
@@ -62,9 +64,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private lateinit var db : ExerciseDataStore;
-
     private lateinit var exerciseDao: ExerciseDao;
-
     private lateinit var viewModel : ApplicationViewModel;
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         db = Room.databaseBuilder<ExerciseDataStore>(applicationContext, "workout-data")
+            .fallbackToDestructiveMigration()
             .setDriver(AndroidSQLiteDriver())
             .build()
 
@@ -84,16 +85,25 @@ class MainActivity : ComponentActivity() {
         setContent {
             Assignment4Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HomeScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        viewModel,
-                        onStartListening = {
-                            Log.w(TAG, "connecting sensor")
-                            connectToDevice()
-                        },
-                        connectionStatus = connectionStatus,
-                        device = device
-                    )
+                    val our_screen = viewModel.activeScreen.collectAsState()
+
+                    when(our_screen.value)
+                    {
+                        ActiveScreen.HOME_SCREEN -> {
+                            HomeScreen(
+                                modifier = Modifier.padding(innerPadding),
+                                viewModel,
+                                onStartListening = {
+                                    Log.w(TAG, "connecting sensor")
+                                    connectToDevice()
+                                },
+                                connectionStatus = connectionStatus,
+                                device = device
+                            )
+                        }
+                        ActiveScreen.HISTORY_SCREEN -> HistoryScreen(modifier = Modifier.padding(innerPadding), viewModel)
+                        else -> {}
+                    }
                 }
             }
         }
