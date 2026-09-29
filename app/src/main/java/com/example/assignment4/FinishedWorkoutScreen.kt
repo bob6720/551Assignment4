@@ -41,5 +41,6 @@ fun FinishedWorkoutScreen(
         Text(text = String.format("Average HR: %f", workout.hrAverage))
         Text(text = String.format("Max HR: %f", workout.hrMax))
         Text(text = String.format("Min HR: %f", workout.hrMin))
+        Text(text = String.format("HR Standard deviation: %f", workout.hrStdDev))
     }
 }

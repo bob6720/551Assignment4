@@ -43,6 +43,17 @@ fun ActiveScreen(
         }
 
         item {
+            val minute_intensity = localViewModel.minuteIntensity.collectAsState()
+            when(minute_intensity.value)
+            {
+                ActivityIntensityClassification.NONE -> {}
+                ActivityIntensityClassification.LOW -> Text("Workout: Low Intensity")
+                ActivityIntensityClassification.MEDIUM -> Text("Workout: Medium Intensity")
+                ActivityIntensityClassification.HIGH -> Text("Workout: High Intensity")
+            }
+        }
+
+        item {
             val rolling_hr = viewModel.rollingHR.collectAsState()
 
             Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {

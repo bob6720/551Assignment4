@@ -2,6 +2,7 @@ package com.example.assignment4.Viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.assignment4.ActivityIntensityClassification
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDao
 import com.example.assignment4.ExerciseDataCalculator
@@ -35,26 +36,56 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 
             debug_thread_running = true;
             debug_data_gen_thread = Thread {
-                var ecg_tick = 0;
-                var hr_tick = 0;
+                var ecg_tick = 0
+                var hr_tick = 0
+                var stage = ActivityIntensityClassification.LOW
+                var stage_tick = 0
 
                 while(debug_thread_running)
                 {
                     Thread.sleep(10)
 
-                    if(hr_tick == 0) {
+                    if(hr_tick == 0)
+                    {
+                        var base_hr = 60;
+                        var accel_mult = 0.0f;
+
+                        if(stage == ActivityIntensityClassification.LOW)
+                        {
+                            base_hr = 60
+                            accel_mult = 1.0f
+                        }
+                        else if(stage == ActivityIntensityClassification.MEDIUM)
+                        {
+                            base_hr = 70
+                            accel_mult = 1.5f
+                        }
+                        else if(stage == ActivityIntensityClassification.HIGH)
+                        {
+                            base_hr = 90
+                            accel_mult = 4.0f
+                        }
+
                         InsertHRSample(
                             active_workout?.id ?: 0,
                             System.currentTimeMillis(),
-                            (60..100).random().toFloat()
+                            (base_hr..(base_hr + 30)).random().toFloat()
                         )
+
                         InsertAccelSample(
                             active_workout?.id ?: 0,
                             System.currentTimeMillis(),
-                            (0..100).random().toFloat(),
-                            (0..100).random().toFloat(),
-                            1000 + (0..100).random().toFloat()
+                            (0..100).random().toFloat() * accel_mult,
+                            (0..100).random().toFloat() * accel_mult,
+                            1000 + ((0..100).random().toFloat() * accel_mult)
                         )
+
+                        stage_tick = (stage_tick + 1) % 100
+
+                        if(stage_tick == 0)
+                        {
+                            stage = ActivityIntensityClassification.values().random()
+                        }
                     }
 
                     val is_wave_stage = ecg_tick > 190
@@ -69,7 +100,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
                     InsertECGSample(active_workout?.id ?: 0, System.currentTimeMillis(), ecg_value_mv)
                     ecg_tick = (ecg_tick + 1) % 200
                     hr_tick = (hr_tick + 1) % 100
-
                 }
             }
             debug_data_gen_thread?.start()
@@ -95,8 +125,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 
             historic_workouts.value = exerciseDao.getCompletedWorkouts()
         }
-
-        // Todo(Leo): Once this is done and stats have been calculated refresh historic_workouts.
     }
 
     fun SwitchToHome()
@@ -139,7 +167,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         return active_workout;
     }
 
-    private var historic_workouts = MutableStateFlow<List<Workout>>(List(0,  { Workout(0, 0L, 0L, 0.0f, 0.0f, 0.0f) }));
+    private var historic_workouts = MutableStateFlow<List<Workout>>(List(0,  { Workout(0, 0L, 0L, 0.0f, 0.0f, 0.0f, 0.0f) }));
     val historicWorkouts = historic_workouts.asStateFlow()
 
     init
@@ -158,11 +186,14 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         exerciseDao.insertHRSample(workout_id, time_stamp, value)
         rolling_hr.value = rolling_hr.value.drop(1) + value
     }
-
+    val ROLLING_ENMO_WINDOW_SIZE = 10;
+    private var rolling_enmo = MutableStateFlow(List(ROLLING_ENMO_WINDOW_SIZE, { 0.0f }));
+    val rollingENMO = rolling_enmo.asStateFlow()
     private fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
     {
         val enmo = ExerciseDataCalculator.calculateENMO(value_x, value_y, value_z)
         exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
+        rolling_enmo.value = rolling_enmo.value.drop(1) + enmo
     }
 
     val ROLLING_ECG_WINDOW_SIZE = 100;

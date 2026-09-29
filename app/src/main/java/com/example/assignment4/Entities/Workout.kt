@@ -14,4 +14,6 @@ data class Workout(
     @ColumnInfo(name = "hr_average") var hrAverage: Float,
     @ColumnInfo(name = "hr_max") var hrMax: Float,
     @ColumnInfo(name = "hr_min") var hrMin: Float,
+    @ColumnInfo(name = "hr_std_dev") var hrStdDev: Float,
+
 )

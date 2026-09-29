@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="HR_MED_INT_BPM">100</integer>
+    <integer name="HR_HIGH_INT_BPM">120</integer>
+
+    <fraction name="ENMO_MED_INT_GRAV">100.0</fraction>
+    <fraction name="ENMO_HIGH_INT_GRAV">200.0</fraction>
+</resources>

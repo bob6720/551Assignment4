@@ -1,5 +1,6 @@
 package com.example.assignment4
 
+import android.util.Log
 import androidx.room3.Dao
 import androidx.room3.Database
 import androidx.room3.Query
@@ -14,7 +15,7 @@ import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 3)
+@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 6)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -38,13 +39,16 @@ interface ExerciseDao
     @Query("INSERT INTO AccelSample (workout_id, time_stamp, value_x, value_y, value_z, enmo) VALUES (:workout_id, :time_stamp, :value_x, :value_y, :value_z, :enmo)")
     fun insertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float, enmo: Float)
 
+    @Query("SELECT time_stamp, value_x, value_y, value_z, enmo FROM AccelSample where workout_id = :workout_id AND time_stamp BETWEEN :time_stamp_start AND :time_stamp_end")
+    fun getAccelSamplesBetween(workout_id: Int, time_stamp_start: Long, time_stamp_end: Long): List<AccelSampleTuple>
+
     @Query("INSERT INTO ECG_Sample (workout_id, time_stamp, value_mv) VALUES (:workout_id, :time_stamp, :value_mv)")
     fun insertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
 
     @Query("SELECT time_stamp, value_mv FROM ECG_Sample where workout_id = :workout_id")
     fun getECGSamples(workout_id: Int): List<ECG_SampleTuple>
 
-    @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min) VALUES (:time_stamp, :time_stamp, 0, 0, 0)")
+    @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min, hr_std_dev) VALUES (:time_stamp, :time_stamp, 0, 0, 0, 0)")
     fun insertWorkout(time_stamp: Long)
 
     @Query("SELECT * FROM Workout WHERE id = (SELECT last_insert_rowid())")
@@ -60,8 +64,8 @@ interface ExerciseDao
     @Query("UPDATE Workout SET end_time_stamp = :time_stamp WHERE id = :workout_id")
     fun insertWorkoutStopTime(workout_id: Int, time_stamp: Long)
 
-    @Query("UPDATE Workout SET hr_average = :average_hr, hr_max = :max_hr, hr_min = :min_hr WHERE id = :workout_id")
-    fun insertWorkoutStats(workout_id: Int, average_hr: Float, max_hr: Float, min_hr: Float)
+    @Query("UPDATE Workout SET hr_average = :average_hr, hr_max = :max_hr, hr_min = :min_hr, hr_std_dev = :hr_std_dev WHERE id = :workout_id")
+    fun insertWorkoutStats(workout_id: Int, average_hr: Float, max_hr: Float, min_hr: Float, hr_std_dev: Float)
 
     @Transaction
     fun stopWorkout(workout: Workout, time_stamp: Long)
@@ -70,7 +74,7 @@ interface ExerciseDao
         val samples = getHRSamples(workout.id)
         calculateWorkoutStats(workout, samples)
 
-        insertWorkoutStats(workout.id, workout.hrAverage, workout.hrMax, workout.hrMin)
+        insertWorkoutStats(workout.id, workout.hrAverage, workout.hrMax, workout.hrMin, workout.hrStdDev)
     }
 
     @Query("SELECT * FROM Workout WHERE start_time_stamp < end_time_stamp")
@@ -95,6 +99,8 @@ object ExerciseDataCalculator
             min = Math.min(min, sample.value.toDouble())
         }
 
+        workout.hrStdDev = calculateStandardDevHR(samples, average.toFloat())
+
         workout.hrAverage = average.toFloat()
         workout.hrMax = max.toFloat()
         workout.hrMin = min.toFloat()
@@ -117,6 +123,31 @@ object ExerciseDataCalculator
         return average.toFloat();
     }
 
+    fun calculateStandardDevHR(samples: List<HR_SampleTuple>, hr_avg: Float): Float
+    {
+        var std_dev = 0.0
+
+        for(sample in samples)
+        {
+            val internal_std_dev = sample.value - hr_avg
+            std_dev += (internal_std_dev * internal_std_dev) / samples.size
+        }
+
+        return Math.sqrt(std_dev).toFloat()
+    }
+
+    fun calculateAverageENMO(samples: List<AccelSampleTuple>): Float
+    {
+        var average = 0.0
+
+        for(sample in samples)
+        {
+            average += sample.enmo / samples.size
+        }
+
+        return average.toFloat();
+    }
+
     fun classifyActivitySliceIntensity(hr_samples: List<HR_SampleTuple>, accel_samples: List<AccelSampleTuple>): ActivityIntensityClassification
     {
         if(hr_samples.size == 0 || accel_samples.size == 0)
@@ -125,11 +156,15 @@ object ExerciseDataCalculator
         }
 
         val avg_hr = calculateAverageHR(hr_samples)
-        if(avg_hr > 120)
+        val avg_enmo = calculateAverageENMO(accel_samples)
+
+        //Log.d("A4", String.format("HR: %f, ENMO: %f", avg_hr, avg_enmo))
+
+        if(avg_hr > R.integer.HR_HIGH_INT_BPM && avg_enmo > R.fraction.ENMO_HIGH_INT_GRAV)
         {
             return ActivityIntensityClassification.HIGH
         }
-        else if(avg_hr > 80)
+        else if(avg_hr > R.integer.HR_MED_INT_BPM && avg_enmo > R.fraction.ENMO_MED_INT_GRAV)
         {
             return ActivityIntensityClassification.MEDIUM
         }

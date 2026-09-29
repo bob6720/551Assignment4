@@ -66,7 +66,11 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
                     val hr_samples = exerciseDao.getHRSamplesBetween(viewModel.GetActiveWorkout()?.id
                         ?: 0, start_time, curr_time)
 
-                    minute_avg_hr.value = ExerciseDataCalculator.calculateAverageHR(hr_samples);
+                    minute_avg_hr.value = ExerciseDataCalculator.calculateAverageHR(hr_samples)
+
+                    // Calculate minute workout intensity
+                    val enmo_samples = exerciseDao.getAccelSamplesBetween(viewModel.GetActiveWorkout()?.id ?: 0, start_time, curr_time)
+                    minute_intensity.value = ExerciseDataCalculator.classifyActivitySliceIntensity(hr_samples, enmo_samples)
                 }
             }
             catch(e: InterruptedException)
