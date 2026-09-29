@@ -20,6 +20,8 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
     private var active_screen = MutableStateFlow(ActiveScreen.HOME_SCREEN)
     val activeScreen = active_screen.asStateFlow()
 
+    var activeScreenViewModel : ScreenViewModel? = null
+
     var debug_thread_running = false;
     var debug_data_gen_thread : Thread? = null;
 
@@ -34,24 +36,40 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
             debug_thread_running = true;
             debug_data_gen_thread = Thread {
                 var ecg_tick = 0;
+                var hr_tick = 0;
 
                 while(debug_thread_running)
                 {
-                    Thread.sleep(100)
+                    Thread.sleep(10)
 
-                    InsertHRSample(active_workout?.id ?: 0, System.currentTimeMillis(), (60..100).random().toFloat())
-                    InsertAccelSample(active_workout?.id ?: 0, System.currentTimeMillis(), (0..100).random().toFloat(), (0..100).random().toFloat(), 1000 + (0..100).random().toFloat())
+                    if(hr_tick == 0) {
+                        InsertHRSample(
+                            active_workout?.id ?: 0,
+                            System.currentTimeMillis(),
+                            (60..100).random().toFloat()
+                        )
+                        InsertAccelSample(
+                            active_workout?.id ?: 0,
+                            System.currentTimeMillis(),
+                            (0..100).random().toFloat(),
+                            (0..100).random().toFloat(),
+                            1000 + (0..100).random().toFloat()
+                        )
+                    }
 
-                    val is_wave_stage = ecg_tick > 700
+                    val is_wave_stage = ecg_tick > 190
 
                     var ecg_value_mv = 0.1f;
                     if(is_wave_stage)
                     {
-                        val tick_progress = ((ecg_tick - 700).toDouble() * Math.PI.toDouble()) / 300.0;
+                        val tick_progress = ((ecg_tick - 190).toDouble() * Math.PI.toDouble()) / 10.0;
                         ecg_value_mv += (Math.sin(tick_progress) * 1.2).toFloat()
                     }
 
                     InsertECGSample(active_workout?.id ?: 0, System.currentTimeMillis(), ecg_value_mv)
+                    ecg_tick = (ecg_tick + 1) % 200
+                    hr_tick = (hr_tick + 1) % 100
+
                 }
             }
             debug_data_gen_thread?.start()
@@ -83,21 +101,29 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 
     fun SwitchToHome()
     {
+        activeScreenViewModel?.ScreenExit()
         active_screen.value = ActiveScreen.HOME_SCREEN
+        activeScreenViewModel = null
     }
 
     fun SwitchToHistory()
     {
+        activeScreenViewModel?.ScreenExit()
         active_screen.value = ActiveScreen.HISTORY_SCREEN
+        activeScreenViewModel = null
     }
 
     fun SwitchToActive()
     {
+        activeScreenViewModel?.ScreenExit()
         active_screen.value = ActiveScreen.ACTIVE_SCREEN
+        activeScreenViewModel = ActiveScreenViewModel(this, exerciseDao);
+        activeScreenViewModel?.ScreenEnter()
     }
 
     fun SwitchToFinishedWorkout(workout: Workout)
     {
+        activeScreenViewModel?.ScreenExit()
         if(is_workout_active.value)
         {
             StopWorkout()
@@ -105,6 +131,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
 
         active_workout = workout
         active_screen.value = ActiveScreen.FINISHED_WORKOUT_SCREEN
+        activeScreenViewModel = null
     }
 
     fun GetActiveWorkout() : Workout?
@@ -138,9 +165,13 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
     }
 
+    val ROLLING_ECG_WINDOW_SIZE = 100;
+    private var rolling_ecg = MutableStateFlow(List(ROLLING_ECG_WINDOW_SIZE, { 0.0f }));
+    val rollingECG = rolling_ecg.asStateFlow()
     private fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
     {
         exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
+        rolling_ecg.value = rolling_ecg.value.drop(1) + value_mv
     }
 
 }

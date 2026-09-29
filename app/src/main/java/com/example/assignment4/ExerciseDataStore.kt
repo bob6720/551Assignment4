@@ -29,6 +29,9 @@ interface ExerciseDao
     @Query("INSERT INTO HR_Sample (workout_id, time_stamp, value) VALUES (:workout_id, :time_stamp, :value)")
     fun insertHRSample(workout_id: Int, time_stamp: Long, value: Float)
 
+    @Query("SELECT time_stamp, value FROM HR_Sample where workout_id = :workout_id AND time_stamp BETWEEN :time_stamp_start AND :time_stamp_end")
+    fun getHRSamplesBetween(workout_id: Int, time_stamp_start: Long, time_stamp_end: Long): List<HR_SampleTuple>
+
     @Query("SELECT time_stamp, value_x, value_y, value_z, enmo FROM AccelSample where workout_id = :workout_id")
     fun getAccelSamples(workout_id: Int): List<AccelSampleTuple>
 
@@ -98,6 +101,18 @@ object ExerciseDataCalculator
     fun calculateENMO(x: Float, y: Float, z: Float): Float
     {
         return Math.max(Math.sqrt(Math.pow(x.toDouble(), 2.0) + Math.pow(y.toDouble(), 2.0) + Math.pow(z.toDouble(), 2.0)).toFloat() - 1000.0f, 0.0f)
+    }
+
+    fun calculateAverageHR(samples: List<HR_SampleTuple>): Float
+    {
+        var average = 0.0
+
+        for(sample in samples)
+        {
+            average += sample.value / samples.size
+        }
+
+        return average.toFloat();
     }
 
 }
