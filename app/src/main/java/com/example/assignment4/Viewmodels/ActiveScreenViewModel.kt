@@ -1,6 +1,7 @@
 package com.example.assignment4.Viewmodels
 
 import androidx.lifecycle.ViewModel
+import com.example.assignment4.ActivityIntensityClassification
 import com.example.assignment4.ExerciseDao
 import com.example.assignment4.ExerciseDataCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,11 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
     // The average HR for the sample period (1 min)
     private val minute_avg_hr = MutableStateFlow<Float>(0.0f);
     val minuteAvgHR = minute_avg_hr.asStateFlow()
+
+    // The intensity of the activity for the last minute
+    private val minute_intensity = MutableStateFlow<ActivityIntensityClassification>(
+        ActivityIntensityClassification.NONE)
+    val minuteIntensity = minute_intensity.asStateFlow()
 
     private var threads_running = false;
 

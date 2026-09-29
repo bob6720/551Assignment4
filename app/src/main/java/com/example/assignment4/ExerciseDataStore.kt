@@ -78,6 +78,8 @@ interface ExerciseDao
 
 }
 
+enum class ActivityIntensityClassification { NONE, LOW, MEDIUM, HIGH }
+
 object ExerciseDataCalculator
 {
     fun calculateWorkoutStats(workout: Workout, samples: List<HR_SampleTuple>)
@@ -113,6 +115,26 @@ object ExerciseDataCalculator
         }
 
         return average.toFloat();
+    }
+
+    fun classifyActivitySliceIntensity(hr_samples: List<HR_SampleTuple>, accel_samples: List<AccelSampleTuple>): ActivityIntensityClassification
+    {
+        if(hr_samples.size == 0 || accel_samples.size == 0)
+        {
+            return ActivityIntensityClassification.NONE
+        }
+
+        val avg_hr = calculateAverageHR(hr_samples)
+        if(avg_hr > 120)
+        {
+            return ActivityIntensityClassification.HIGH
+        }
+        else if(avg_hr > 80)
+        {
+            return ActivityIntensityClassification.MEDIUM
+        }
+
+        return ActivityIntensityClassification.LOW
     }
 
 }
