@@ -1,6 +1,8 @@
 package com.example.assignment4
 
 import android.Manifest
+import android.content.SharedPreferences
+import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -67,6 +69,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var exerciseDao: ExerciseDao;
     private lateinit var viewModel : ApplicationViewModel;
 
+    private lateinit var sharedPrefs : SharedPreferences
+
+    private lateinit var resources : Resources
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -78,7 +84,11 @@ class MainActivity : ComponentActivity() {
 
         exerciseDao = db.exerciseDao()
 
-        viewModel = ApplicationViewModel(exerciseDao)
+        sharedPrefs = this.getSharedPreferences("sharedPrefs", MODE_PRIVATE)
+
+        resources = getResources()
+
+        viewModel = ApplicationViewModel(exerciseDao, resources, sharedPrefs)
 
         setupPolarCallback()
 
@@ -104,6 +114,7 @@ class MainActivity : ComponentActivity() {
                         ActiveScreen.HISTORY_SCREEN -> HistoryScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         ActiveScreen.ACTIVE_SCREEN -> ActiveScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         ActiveScreen.FINISHED_WORKOUT_SCREEN -> FinishedWorkoutScreen(modifier = Modifier.padding(innerPadding), viewModel, viewModel.GetActiveWorkout())
+                        ActiveScreen.SETTINGS_SCREEN -> SettingsScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         else -> {}
                     }
                 }

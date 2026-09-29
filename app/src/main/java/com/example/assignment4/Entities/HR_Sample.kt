@@ -10,9 +10,11 @@ data class HR_Sample(
     @PrimaryKey() val time_stamp: Long,
     @ColumnInfo(name = "workout_id") val workout_id: Int,
     @ColumnInfo(name = "value") val value: Float,
+    @ColumnInfo(name = "percent_hrr") val percent_hrr: Float
 )
 
 data class HR_SampleTuple(
     @ColumnInfo(name = "time_stamp") val timeStamp: Long,
-    @ColumnInfo(name = "value") val value: Float
+    @ColumnInfo(name = "value") val value: Float,
+    @ColumnInfo(name = "percent_hrr") val percent_hrr: Float
 )

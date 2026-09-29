@@ -17,8 +17,7 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
     val minuteAvgHR = minute_avg_hr.asStateFlow()
 
     // The intensity of the activity for the last minute
-    private val minute_intensity = MutableStateFlow<ActivityIntensityClassification>(
-        ActivityIntensityClassification.NONE)
+    private val minute_intensity = MutableStateFlow<ActivityIntensityClassification>(ActivityIntensityClassification.NONE)
     val minuteIntensity = minute_intensity.asStateFlow()
 
     private var threads_running = false;
@@ -70,7 +69,7 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
 
                     // Calculate minute workout intensity
                     val enmo_samples = exerciseDao.getAccelSamplesBetween(viewModel.GetActiveWorkout()?.id ?: 0, start_time, curr_time)
-                    minute_intensity.value = ExerciseDataCalculator.classifyActivitySliceIntensity(hr_samples, enmo_samples)
+                    minute_intensity.value = ExerciseDataCalculator.classifyActivitySliceIntensity(viewModel.resources, hr_samples, enmo_samples)
                 }
             }
             catch(e: InterruptedException)

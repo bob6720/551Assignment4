@@ -1,5 +1,6 @@
 package com.example.assignment4
 
+import android.content.res.Resources
 import android.util.Log
 import androidx.room3.Dao
 import androidx.room3.Database
@@ -15,7 +16,7 @@ import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 6)
+@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 7)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -24,13 +25,13 @@ abstract class ExerciseDataStore : RoomDatabase()
 @Dao
 interface ExerciseDao
 {
-    @Query("SELECT time_stamp, value FROM HR_Sample where workout_id = :workout_id")
+    @Query("SELECT time_stamp, value, percent_hrr FROM HR_Sample where workout_id = :workout_id")
     fun getHRSamples(workout_id: Int): List<HR_SampleTuple>
 
-    @Query("INSERT INTO HR_Sample (workout_id, time_stamp, value) VALUES (:workout_id, :time_stamp, :value)")
-    fun insertHRSample(workout_id: Int, time_stamp: Long, value: Float)
+    @Query("INSERT INTO HR_Sample (workout_id, time_stamp, value, percent_hrr) VALUES (:workout_id, :time_stamp, :value, :percent_hrr)")
+    fun insertHRSample(workout_id: Int, time_stamp: Long, value: Float, percent_hrr: Float)
 
-    @Query("SELECT time_stamp, value FROM HR_Sample where workout_id = :workout_id AND time_stamp BETWEEN :time_stamp_start AND :time_stamp_end")
+    @Query("SELECT time_stamp, value, percent_hrr FROM HR_Sample where workout_id = :workout_id AND time_stamp BETWEEN :time_stamp_start AND :time_stamp_end")
     fun getHRSamplesBetween(workout_id: Int, time_stamp_start: Long, time_stamp_end: Long): List<HR_SampleTuple>
 
     @Query("SELECT time_stamp, value_x, value_y, value_z, enmo FROM AccelSample where workout_id = :workout_id")
@@ -111,6 +112,11 @@ object ExerciseDataCalculator
         return Math.max(Math.sqrt(Math.pow(x.toDouble(), 2.0) + Math.pow(y.toDouble(), 2.0) + Math.pow(z.toDouble(), 2.0)).toFloat() - 1000.0f, 0.0f)
     }
 
+    fun calculatePercentHRR(sample_hr: Float, resting_hr: Float, max_hr: Float): Float
+    {
+        return Math.max((sample_hr - resting_hr) / (max_hr - resting_hr), 0.0f)
+    }
+
     fun calculateAverageHR(samples: List<HR_SampleTuple>): Float
     {
         var average = 0.0
@@ -118,6 +124,18 @@ object ExerciseDataCalculator
         for(sample in samples)
         {
             average += sample.value / samples.size
+        }
+
+        return average.toFloat();
+    }
+
+    fun calculateAveragePercentHRR(samples: List<HR_SampleTuple>): Float
+    {
+        var average = 0.0
+
+        for(sample in samples)
+        {
+            average += sample.percent_hrr / samples.size
         }
 
         return average.toFloat();
@@ -148,23 +166,23 @@ object ExerciseDataCalculator
         return average.toFloat();
     }
 
-    fun classifyActivitySliceIntensity(hr_samples: List<HR_SampleTuple>, accel_samples: List<AccelSampleTuple>): ActivityIntensityClassification
+    fun classifyActivitySliceIntensity(resources: Resources, hr_samples: List<HR_SampleTuple>, accel_samples: List<AccelSampleTuple>): ActivityIntensityClassification
     {
         if(hr_samples.size == 0 || accel_samples.size == 0)
         {
             return ActivityIntensityClassification.NONE
         }
 
-        val avg_hr = calculateAverageHR(hr_samples)
+        val avg_percent_hrr = calculateAveragePercentHRR(hr_samples)
         val avg_enmo = calculateAverageENMO(accel_samples)
 
         //Log.d("A4", String.format("HR: %f, ENMO: %f", avg_hr, avg_enmo))
 
-        if(avg_hr > R.integer.HR_HIGH_INT_BPM && avg_enmo > R.fraction.ENMO_HIGH_INT_GRAV)
+        if(avg_percent_hrr > resources.getInteger(R.integer.HR_HIGH_INT_HRR) && avg_enmo > resources.getInteger(R.integer.ENMO_HIGH_INT_GRAV))
         {
             return ActivityIntensityClassification.HIGH
         }
-        else if(avg_hr > R.integer.HR_MED_INT_BPM && avg_enmo > R.fraction.ENMO_MED_INT_GRAV)
+        else if(avg_percent_hrr > resources.getInteger(R.integer.HR_MED_INT_HRR) && avg_enmo > resources.getInteger(R.integer.ENMO_MED_INT_GRAV))
         {
             return ActivityIntensityClassification.MEDIUM
         }

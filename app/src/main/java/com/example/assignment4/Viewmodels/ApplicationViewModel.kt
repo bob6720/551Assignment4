@@ -1,19 +1,23 @@
 package com.example.assignment4.Viewmodels
 
+import android.content.SharedPreferences
+import android.content.res.Resources
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.assignment4.ActivityIntensityClassification
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDao
 import com.example.assignment4.ExerciseDataCalculator
+import com.example.assignment4.ExerciseDataCalculator.calculatePercentHRR
+import com.example.assignment4.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-enum class ActiveScreen { HOME_SCREEN, HISTORY_SCREEN, ACTIVE_SCREEN, FINISHED_WORKOUT_SCREEN }
+enum class ActiveScreen { HOME_SCREEN, HISTORY_SCREEN, ACTIVE_SCREEN, FINISHED_WORKOUT_SCREEN, SETTINGS_SCREEN }
 
-class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
+class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: Resources, val sharedPrefs: SharedPreferences) : ViewModel()
 {
     private var active_workout : Workout? = null;
     private var is_workout_active : MutableStateFlow<Boolean> = MutableStateFlow(false);
@@ -162,6 +166,13 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         activeScreenViewModel = null
     }
 
+    fun SwitchToSettings()
+    {
+        activeScreenViewModel?.ScreenExit()
+        active_screen.value = ActiveScreen.SETTINGS_SCREEN
+        activeScreenViewModel = null
+    }
+
     fun GetActiveWorkout() : Workout?
     {
         return active_workout;
@@ -178,15 +189,17 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         }
     }
 
-    val ROLLING_HR_WINDOW_SIZE = 10;
+    private val ROLLING_HR_WINDOW_SIZE = 10;
     private var rolling_hr = MutableStateFlow(List(ROLLING_HR_WINDOW_SIZE, { 0.0f }));
     val rollingHR = rolling_hr.asStateFlow()
     private fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
     {
-        exerciseDao.insertHRSample(workout_id, time_stamp, value)
+        val percent_hrr = calculatePercentHRR(value, UserRestingHeartRate.toFloat(), UserMaxHeartRate.toFloat())
+
+        exerciseDao.insertHRSample(workout_id, time_stamp, value, percent_hrr)
         rolling_hr.value = rolling_hr.value.drop(1) + value
     }
-    val ROLLING_ENMO_WINDOW_SIZE = 10;
+    private val ROLLING_ENMO_WINDOW_SIZE = 10;
     private var rolling_enmo = MutableStateFlow(List(ROLLING_ENMO_WINDOW_SIZE, { 0.0f }));
     val rollingENMO = rolling_enmo.asStateFlow()
     private fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
@@ -196,13 +209,87 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao) : ViewModel()
         rolling_enmo.value = rolling_enmo.value.drop(1) + enmo
     }
 
-    val ROLLING_ECG_WINDOW_SIZE = 100;
+    private val ROLLING_ECG_WINDOW_SIZE = 100;
     private var rolling_ecg = MutableStateFlow(List(ROLLING_ECG_WINDOW_SIZE, { 0.0f }));
     val rollingECG = rolling_ecg.asStateFlow()
     private fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
     {
         exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
         rolling_ecg.value = rolling_ecg.value.drop(1) + value_mv
+    }
+
+    // From the settings, or defaults if these aren't set.
+    private var UserRestingHeartRate = 0;
+    private var UserMaxHeartRate = 0;
+
+    init
+    {
+        val default_resting_hr = resources.getInteger(R.integer.DEFAULT_RESTING_HR)
+        UserRestingHeartRate = sharedPrefs.getInt("RESTING_HR", default_resting_hr)
+
+        val default_max_hr = resources.getInteger(R.integer.DEFAULT_MAX_HR)
+        UserMaxHeartRate = sharedPrefs.getInt("MAX_HR", default_max_hr)
+    }
+
+    fun GetUserRestingHeartRate() : Int
+    {
+        return UserRestingHeartRate
+    }
+
+    fun GetUserMaxHeartRate() : Int
+    {
+        return UserMaxHeartRate
+    }
+
+    fun SetUserRestingHeartRate(value: Int)
+    {
+        if(value < 0)
+        {
+            return
+        }
+
+        UserRestingHeartRate = value
+
+        if(value > UserMaxHeartRate)
+        {
+            SetUserMaxHeartRate(value + 1)
+        }
+
+        with(sharedPrefs.edit())
+        {
+            putInt("RESTING_HR", value)
+            apply()
+        }
+    }
+
+    fun SetUserMaxHeartRate(value: Int)
+    {
+        var set_value = value
+
+        if(set_value < 0)
+        {
+            return
+        }
+
+        UserMaxHeartRate = value
+
+        if(set_value < UserRestingHeartRate)
+        {
+
+            if(set_value - 1 < 0)
+            {
+                set_value++
+            }
+
+            SetUserRestingHeartRate(set_value - 1)
+        }
+
+
+        with(sharedPrefs.edit())
+        {
+            putInt("MAX_HR", set_value)
+            apply()
+        }
     }
 
 }

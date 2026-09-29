@@ -92,6 +92,11 @@ fun HomeScreen(
                 {
                     Text("History")
                 }
+
+                Button(onClick = { viewModel.SwitchToSettings() })
+                {
+                    Text("Settings")
+                }
             }
         }
     }
