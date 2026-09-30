@@ -173,7 +173,7 @@ object ExerciseDataCalculator
             return ActivityIntensityClassification.NONE
         }
 
-        val avg_percent_hrr = calculateAveragePercentHRR(hr_samples)
+        val avg_percent_hrr = calculateAveragePercentHRR(hr_samples) * 100.0f
         val avg_enmo = calculateAverageENMO(accel_samples)
 
         //Log.d("A4", String.format("HR: %f, ENMO: %f", avg_hr, avg_enmo))

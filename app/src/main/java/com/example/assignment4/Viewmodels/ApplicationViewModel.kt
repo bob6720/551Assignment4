@@ -2,6 +2,7 @@ package com.example.assignment4.Viewmodels
 
 import android.content.SharedPreferences
 import android.content.res.Resources
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.assignment4.ActivityIntensityClassification
@@ -61,12 +62,12 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
                         }
                         else if(stage == ActivityIntensityClassification.MEDIUM)
                         {
-                            base_hr = 70
-                            accel_mult = 1.5f
+                            base_hr = 80
+                            accel_mult = 2.0f
                         }
                         else if(stage == ActivityIntensityClassification.HIGH)
                         {
-                            base_hr = 90
+                            base_hr = 105
                             accel_mult = 4.0f
                         }
 
@@ -89,6 +90,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
                         if(stage_tick == 0)
                         {
                             stage = ActivityIntensityClassification.values().random()
+                            Log.d("A4", "Stage: $stage")
                         }
                     }
 
