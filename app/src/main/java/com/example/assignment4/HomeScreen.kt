@@ -1,18 +1,28 @@
 package com.example.assignment4
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.assignment4.Viewmodels.ApplicationViewModel
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    viewModel: ApplicationViewModel,
     onStartListening: () -> Unit = {},
     connectionStatus: String = "",
     device: String = ""
@@ -54,8 +64,38 @@ fun HomeScreen(
                         Text(text = connectionStatus)
                     }
                 }
-                Button(onClick = onStartListening) {
+                Button(onClick = onStartListening)
+                {
                     Text("Start Listening")
+                }
+
+                val isWorkoutActive = viewModel.isWorkoutActive.collectAsState()
+
+                if(!isWorkoutActive.value){
+                    Button(onClick = { viewModel.StartWorkout() })
+                    {
+                        Text("Start Workout")
+                    }
+                } else {
+                    Button(onClick = { viewModel.StopWorkout() })
+                    {
+                        Text("Stop Workout")
+                    }
+                }
+
+                Button(onClick = { viewModel.SwitchToActive() })
+                {
+                    Text("Current Workout")
+                }
+
+                Button(onClick = { viewModel.SwitchToHistory() })
+                {
+                    Text("History")
+                }
+
+                Button(onClick = { viewModel.SwitchToSettings() })
+                {
+                    Text("Settings")
                 }
             }
         }

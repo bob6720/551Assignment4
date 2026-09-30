@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="HR_MED_INT_HRR">70</integer>
+    <integer name="HR_HIGH_INT_HRR">95</integer>
+
+    <integer name="ENMO_MED_INT_GRAV">100</integer>
+    <integer name="ENMO_HIGH_INT_GRAV">200</integer>
+
+    <integer name="DEFAULT_RESTING_HR">60</integer>
+    <integer name="DEFAULT_MAX_HR">100</integer>
+</resources>
