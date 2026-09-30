@@ -113,7 +113,7 @@ class MainActivity : ComponentActivity() {
                         }
                         ActiveScreen.HISTORY_SCREEN -> HistoryScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         ActiveScreen.ACTIVE_SCREEN -> ActiveScreen(modifier = Modifier.padding(innerPadding), viewModel)
-                        ActiveScreen.FINISHED_WORKOUT_SCREEN -> FinishedWorkoutScreen(modifier = Modifier.padding(innerPadding), viewModel, viewModel.GetActiveWorkout())
+                        ActiveScreen.FINISHED_WORKOUT_SCREEN -> FinishedWorkoutScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         ActiveScreen.SETTINGS_SCREEN -> SettingsScreen(modifier = Modifier.padding(innerPadding), viewModel)
                         else -> {}
                     }

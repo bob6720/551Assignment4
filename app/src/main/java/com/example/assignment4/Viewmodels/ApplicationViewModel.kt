@@ -158,14 +158,9 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     fun SwitchToFinishedWorkout(workout: Workout)
     {
         activeScreenViewModel?.ScreenExit()
-        if(is_workout_active.value)
-        {
-            StopWorkout()
-        }
-
-        active_workout = workout
         active_screen.value = ActiveScreen.FINISHED_WORKOUT_SCREEN
-        activeScreenViewModel = null
+        activeScreenViewModel = FinishedWorkoutScreenViewModel(workout)
+        activeScreenViewModel?.ScreenEnter()
     }
 
     fun SwitchToSettings()

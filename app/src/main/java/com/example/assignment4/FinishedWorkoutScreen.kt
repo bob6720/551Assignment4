@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.Viewmodels.ApplicationViewModel
+import com.example.assignment4.Viewmodels.FinishedWorkoutScreenViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -16,9 +17,11 @@ import java.time.format.FormatStyle
 fun FinishedWorkoutScreen(
     modifier: Modifier = Modifier,
     viewModel: ApplicationViewModel,
-    workout: Workout?
 )
 {
+    val localViewModel = viewModel.activeScreenViewModel as FinishedWorkoutScreenViewModel
+    val workout = localViewModel.workout
+
     Column(modifier = modifier.fillMaxWidth().fillMaxHeight().background(color = Color.White))
     {
         if(workout == null)
@@ -33,7 +36,7 @@ fun FinishedWorkoutScreen(
             Text("Back")
         }
 
-        val start_time_label = timestamp_converter.format(Instant.ofEpochMilli(workout!!.startTimeStamp))
+        val start_time_label = timestamp_converter.format(Instant.ofEpochMilli(workout.startTimeStamp))
         val end_time_label = timestamp_converter.format(Instant.ofEpochMilli(workout.endTimeStamp))
 
         Text(text = String.format("Workout %d (%s-%s)", workout.id, start_time_label, end_time_label))

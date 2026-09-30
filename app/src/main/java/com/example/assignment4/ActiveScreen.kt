@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.assignment4.Viewmodels.ActiveScreenViewModel
@@ -33,6 +35,7 @@ fun ActiveScreen(
 )
 {
     val localViewModel = viewModel.activeScreenViewModel as ActiveScreenViewModel
+    val textMeasurer = rememberTextMeasurer()
 
     LazyColumn(modifier = modifier.fillMaxWidth().fillMaxHeight().background(color = Color.White))
     {
@@ -47,33 +50,35 @@ fun ActiveScreen(
 
         item {
             val minute_hr = localViewModel.minuteAvgHR.collectAsState()
-            Text(String.format("1min AVG HR: %d", minute_hr.value.toInt()))
+            Text(String.format("1-minute Average Heart Rate: %dbpm", minute_hr.value.toInt()))
         }
 
         item {
             val minute_intensity = localViewModel.minuteIntensity.collectAsState()
             when(minute_intensity.value)
             {
-                ActivityIntensityClassification.NONE -> Text("Workout: No Workout Detected")
-                ActivityIntensityClassification.LOW -> Text("Workout: Low Intensity")
-                ActivityIntensityClassification.MEDIUM -> Text("Workout: Medium Intensity")
-                ActivityIntensityClassification.HIGH -> Text("Workout: High Intensity")
+                ActivityIntensityClassification.NONE -> Text("Activity Intensity: No Activity Detected")
+                ActivityIntensityClassification.LOW -> Text("Activity Intensity: Low Intensity")
+                ActivityIntensityClassification.MEDIUM -> Text("Activity Intensity: Medium Intensity")
+                ActivityIntensityClassification.HIGH -> Text("Activity Intensity: High Intensity")
             }
         }
 
         item {
+            Text(modifier = Modifier.fillMaxWidth(), text = "Heart Rate History", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+
             val rolling_hr = viewModel.rollingHR.collectAsState()
-
-            val textMeasurer = rememberTextMeasurer()
-
-            Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+            Canvas(modifier = Modifier.fillMaxWidth().padding(2.dp).height(300.dp)) {
+                val maxValue = 180
                 val inner_height = size.height * 0.8f
 
-                val left_offset = 100f
+                val label_top = textMeasurer.measure(String.format("%dbpm", maxValue))
+                val label_bottom = textMeasurer.measure(text = "0bpm")
+
+                val left_offset = Math.max(label_top.size.width, label_bottom.size.width).toFloat() + 10.0f
                 val inner_width = size.width - left_offset
 
                 val path = Path()
-                val maxValue = 180
                 rolling_hr.value.forEachIndexed { index, value ->
                     val x = (index * (inner_width / (rolling_hr.value.size - 1))) + left_offset
                     val y = inner_height - (value / maxValue) * inner_height
@@ -82,31 +87,64 @@ fun ActiveScreen(
 
                 drawPath(path, Color.Blue, style = Stroke(width = 3f))
 
-                drawLine(Color.Black, start = Offset(left_offset, inner_height), end = Offset(inner_width + left_offset, inner_height), strokeWidth = 10f)
-                drawLine(Color.Black, start = Offset(left_offset, 0f), end = Offset(left_offset, inner_height), strokeWidth = 10f)
+                drawLine(
+                    Color.Black,
+                    start = Offset(left_offset, inner_height),
+                    end = Offset(inner_width + left_offset, inner_height),
+                    strokeWidth = 10f
+                )
+                drawLine(
+                    Color.Black,
+                    start = Offset(left_offset, 0f),
+                    end = Offset(left_offset, inner_height),
+                    strokeWidth = 10f
+                )
 
-                val label_top = textMeasurer.measure(maxValue.toString())
-                drawText(label_top, topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f))
+                drawText(
+                    label_top,
+                    topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f)
+                )
 
-                val label_bottom = textMeasurer.measure(text="0")
-                drawText(label_bottom, topLeft = Offset(left_offset - (label_bottom.size.width + 10f), inner_height - label_bottom.size.height))
+                drawText(
+                    label_bottom,
+                    topLeft = Offset(
+                        left_offset - (label_bottom.size.width + 10f),
+                        inner_height - label_bottom.size.height
+                    )
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        item {
+            Text(modifier = Modifier.fillMaxWidth(), text = "ECG Visualiser", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
 
             val rolling_ecg = viewModel.rollingECG.collectAsState()
-            Canvas(modifier = Modifier.fillMaxWidth().height(300.dp)) {
-                val path = Path()
+            Canvas(modifier = Modifier.fillMaxWidth().padding(2.dp).height(300.dp)) {
+                val inner_height = size.height * 0.8f
+
                 val maxValue = 2.0f
+                val label_top = textMeasurer.measure(String.format("%.2fuV", maxValue))
+                val label_bottom = textMeasurer.measure(text="0.00uV")
+
+                val left_offset = Math.max(label_top.size.width, label_bottom.size.width).toFloat() + 10.0f
+                val inner_width = size.width - left_offset
+
+                val path = Path()
                 rolling_ecg.value.forEachIndexed { index, value ->
-                    val x = index * (size.width / (rolling_ecg.value.size - 1))
-                    val y = (size.height - (value / maxValue) * size.height) + 0.1f;
+                    val x = (index * (inner_width / (rolling_ecg.value.size - 1))) + left_offset
+                    val y = (inner_height - (value / maxValue) * inner_height);
                     if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                 }
                 drawPath(path, Color.Red, style = Stroke(width = 3f))
 
-                drawLine(Color.Black, start = Offset(0f, size.height), end = Offset(size.width, size.height), strokeWidth = 10f)
-                drawLine(Color.Black, start = Offset(0f, 0f), end = Offset(0f, size.height), strokeWidth = 10f)
+                drawLine(Color.Black, start = Offset(left_offset, inner_height), end = Offset(inner_width + left_offset, inner_height), strokeWidth = 10f)
+                drawLine(Color.Black, start = Offset(left_offset, 0f), end = Offset(left_offset, inner_height), strokeWidth = 10f)
+
+                drawText(label_top, topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f))
+
+                drawText(label_bottom, topLeft = Offset(left_offset - (label_bottom.size.width + 10f), inner_height - label_bottom.size.height))
             }
         }
     }

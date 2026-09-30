@@ -56,8 +56,6 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
             {
                 while(true)
                 {
-                    Thread.sleep(SLOW_REFRESH_TIME_MS)
-
                     // Calculate minute HR stats
                     val curr_time = System.currentTimeMillis();
                     val start_time = curr_time - SLOW_REFRESH_TIME_MS;
@@ -70,6 +68,8 @@ class ActiveScreenViewModel(private val viewModel: ApplicationViewModel, private
                     // Calculate minute workout intensity
                     val enmo_samples = exerciseDao.getAccelSamplesBetween(viewModel.GetActiveWorkout()?.id ?: 0, start_time, curr_time)
                     minute_intensity.value = ExerciseDataCalculator.classifyActivitySliceIntensity(viewModel.resources, hr_samples, enmo_samples)
+
+                    Thread.sleep(SLOW_REFRESH_TIME_MS)
                 }
             }
             catch(e: InterruptedException)
