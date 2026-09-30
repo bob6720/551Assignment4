@@ -129,6 +129,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        viewModel.activeScreenViewModel?.ScreenExit()
         super.onDestroy()
         searchJob?.cancel()
         api.shutDown()
@@ -175,8 +176,15 @@ class MainActivity : ComponentActivity() {
                                 api.startHrStreaming(identifier)
                                     .catch { error -> Log.e(TAG, "HR stream failed", error) }
                                     .collect { hrData ->
-                                        for (sample in hrData.samples) {
-                                            Log.d(TAG, "HR sample: ${sample.hr} bpm")
+                                        if(viewModel.GetActiveWorkout() == null)
+                                        {
+                                            return@collect
+                                        }
+
+                                        for(sample in hrData.samples)
+                                        {
+                                            //Log.d(TAG, "HR sample: ${sample.hr} bpm")
+                                            viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(), sample.hr.toFloat())
                                         }
                                     }
                             }
@@ -187,9 +195,16 @@ class MainActivity : ComponentActivity() {
                                 api.startAccStreaming(identifier, PolarSensorSetting(accel_settings))
                                     .catch { error -> Log.e(TAG, "ACC stream failed", error) }
                                     .collect { accData ->
-                                        for (sample in accData.samples)
+                                        if(viewModel.GetActiveWorkout() == null)
                                         {
-                                            Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                            return@collect
+                                        }
+
+                                        for(sample in accData.samples)
+                                        {
+                                            //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                            viewModel.InsertAccelSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(),
+                                                sample.x.toFloat(), sample.y.toFloat(), sample.z.toFloat())
                                         }
                                     }
                             }
@@ -197,27 +212,33 @@ class MainActivity : ComponentActivity() {
                             if(PolarBleApi.PolarDeviceDataType.ECG in streamTypes)
                             {
                                 val ecg_settings = api.requestStreamSettings(identifier, PolarBleApi.PolarDeviceDataType.ECG)
-                                    api.startEcgStreaming(identifier, ecg_settings.maxSettings())
-                                        .catch {  error -> Log.e(TAG, "ECG stream failed", error)  }
-                                        .collect { ecgData ->
-                                            for(sample in ecgData.samples)
+                                api.startEcgStreaming(identifier, ecg_settings.maxSettings())
+                                    .catch {  error -> Log.e(TAG, "ECG stream failed", error)  }
+                                    .collect { ecgData ->
+                                        if(viewModel.GetActiveWorkout() == null)
+                                        {
+                                            return@collect
+                                        }
+
+                                        for(sample in ecgData.samples)
+                                        {
+                                            if(sample is EcgSample)
                                             {
-                                                if(sample is EcgSample)
-                                                {
-                                                    Log.d(TAG, "ECG sample: ${sample.voltage}")
-                                                }
+                                                //Log.d(TAG, "ECG sample: ${sample.voltage}")
+                                                viewModel.InsertECGSample(viewModel.GetActiveWorkout()!!.id, sample.timeStamp, sample.voltage.toFloat())
                                             }
                                         }
-                            }
-
-                            if(PolarBleApi.PolarDeviceDataType.PPI in streamTypes)
-                            {
-                                api.startPpiStreaming(identifier)
-                                    .catch { error -> Log.e(TAG, "PPI stream failed", error) }
-                                    .collect { ppiData ->
-                                        Log.d(TAG, "PPI samples: ${ppiData.samples.size}")
                                     }
                             }
+
+//                            if(PolarBleApi.PolarDeviceDataType.PPI in streamTypes)
+//                            {
+//                                api.startPpiStreaming(identifier)
+//                                    .catch { error -> Log.e(TAG, "PPI stream failed", error) }
+//                                    .collect { ppiData ->
+//                                        Log.d(TAG, "PPI samples: ${ppiData.samples.size}")
+//                                    }
+//                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to query stream types", e)
                         }

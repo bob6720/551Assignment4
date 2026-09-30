@@ -189,7 +189,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     private val ROLLING_HR_WINDOW_SIZE = 10;
     private var rolling_hr = MutableStateFlow(List(ROLLING_HR_WINDOW_SIZE, { 0.0f }));
     val rollingHR = rolling_hr.asStateFlow()
-    private fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
+    fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
     {
         val percent_hrr = calculatePercentHRR(value, UserRestingHeartRate.toFloat(), UserMaxHeartRate.toFloat())
 
@@ -199,7 +199,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     private val ROLLING_ENMO_WINDOW_SIZE = 10;
     private var rolling_enmo = MutableStateFlow(List(ROLLING_ENMO_WINDOW_SIZE, { 0.0f }));
     val rollingENMO = rolling_enmo.asStateFlow()
-    private fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
+    fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
     {
         val enmo = ExerciseDataCalculator.calculateENMO(value_x, value_y, value_z)
         exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
@@ -209,7 +209,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     private val ROLLING_ECG_WINDOW_SIZE = 100;
     private var rolling_ecg = MutableStateFlow(List(ROLLING_ECG_WINDOW_SIZE, { 0.0f }));
     val rollingECG = rolling_ecg.asStateFlow()
-    private fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
+    fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
     {
         exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
         rolling_ecg.value = rolling_ecg.value.drop(1) + value_mv
