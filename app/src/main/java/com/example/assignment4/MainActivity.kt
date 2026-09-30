@@ -29,11 +29,17 @@ import com.polar.sdk.api.PolarBleApi
 import com.polar.sdk.api.PolarBleApiCallbackProvider
 import com.polar.sdk.api.PolarBleApiDefaultImpl
 import com.polar.sdk.api.PolarBleDisconnectInfo
+import com.polar.sdk.api.model.EcgSample
 import com.polar.sdk.api.model.PolarDeviceInfo
+import com.polar.sdk.api.model.PolarEcgDataSample
 import com.polar.sdk.api.model.PolarHealthThermometerData
 import com.polar.sdk.api.model.PolarHrData
+import com.polar.sdk.api.model.PolarSensorSetting
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.observeOn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.subscribe
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -163,7 +169,9 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         try {
                             val streamTypes = api.getAvailableOnlineStreamDataTypes(identifier)
-                            if (PolarBleApi.PolarDeviceDataType.HR in streamTypes) {
+
+                            if(PolarBleApi.PolarDeviceDataType.HR in streamTypes)
+                            {
                                 api.startHrStreaming(identifier)
                                     .catch { error -> Log.e(TAG, "HR stream failed", error) }
                                     .collect { hrData ->
@@ -171,7 +179,39 @@ class MainActivity : ComponentActivity() {
                                             Log.d(TAG, "HR sample: ${sample.hr} bpm")
                                         }
                                     }
-                            } else if (PolarBleApi.PolarDeviceDataType.PPI in streamTypes) {
+                            }
+
+                            if(PolarBleApi.PolarDeviceDataType.ACC in streamTypes)
+                            {
+                                val accel_settings : Map<PolarSensorSetting.SettingType, Int> = mapOf(PolarSensorSetting.SettingType.SAMPLE_RATE to 25);
+                                api.startAccStreaming(identifier, PolarSensorSetting(accel_settings))
+                                    .catch { error -> Log.e(TAG, "ACC stream failed", error) }
+                                    .collect { accData ->
+                                        for (sample in accData.samples)
+                                        {
+                                            Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                        }
+                                    }
+                            }
+
+                            if(PolarBleApi.PolarDeviceDataType.ECG in streamTypes)
+                            {
+                                val ecg_settings = api.requestStreamSettings(identifier, PolarBleApi.PolarDeviceDataType.ECG)
+                                    api.startEcgStreaming(identifier, ecg_settings.maxSettings())
+                                        .catch {  error -> Log.e(TAG, "ECG stream failed", error)  }
+                                        .collect { ecgData ->
+                                            for(sample in ecgData.samples)
+                                            {
+                                                if(sample is EcgSample)
+                                                {
+                                                    Log.d(TAG, "ECG sample: ${sample.voltage}")
+                                                }
+                                            }
+                                        }
+                            }
+
+                            if(PolarBleApi.PolarDeviceDataType.PPI in streamTypes)
+                            {
                                 api.startPpiStreaming(identifier)
                                     .catch { error -> Log.e(TAG, "PPI stream failed", error) }
                                     .collect { ppiData ->
@@ -184,8 +224,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-
-
 
             //same as the PolarBLEAPI. we can remove the calls we arent using
             override fun bleSdkFeaturesReadiness(
