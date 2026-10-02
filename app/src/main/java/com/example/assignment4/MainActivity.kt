@@ -74,7 +74,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var db : ExerciseDataStore;
     private lateinit var exerciseDao: ExerciseDao;
     private lateinit var viewModel : ApplicationViewModel;
-
     private lateinit var sharedPrefs : SharedPreferences
 
     private lateinit var resources : Resources
@@ -94,7 +93,7 @@ class MainActivity : ComponentActivity() {
 
         resources = getResources()
 
-        viewModel = ApplicationViewModel(exerciseDao, resources, sharedPrefs)
+        viewModel = ApplicationViewModel(exerciseDao, resources, sharedPrefs, ::connectToDevice, ::disconnectDevice)
 
         setupPolarCallback()
 
@@ -319,5 +318,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
         }
+    }
+
+    fun disconnectDevice()
+    {
+        api.shutDown()
     }
 }

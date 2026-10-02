@@ -23,7 +23,6 @@ import java.time.format.FormatStyle
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: ApplicationViewModel,
-    onStartListening: () -> Unit = {},
     connectionStatus: String = "",
     device: String = ""
 ) {
@@ -63,10 +62,6 @@ fun HomeScreen(
                     } else {
                         Text(text = connectionStatus)
                     }
-                }
-                Button(onClick = onStartListening)
-                {
-                    Text("Start Listening")
                 }
 
                 val isWorkoutActive = viewModel.isWorkoutActive.collectAsState()

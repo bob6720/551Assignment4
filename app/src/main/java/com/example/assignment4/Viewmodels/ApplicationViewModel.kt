@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 enum class ActiveScreen { HOME_SCREEN, HISTORY_SCREEN, ACTIVE_SCREEN, FINISHED_WORKOUT_SCREEN, SETTINGS_SCREEN }
 
-class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: Resources, val sharedPrefs: SharedPreferences) : ViewModel()
+class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: Resources, val sharedPrefs: SharedPreferences, private val onStartListening: () -> Unit, private val onStopListening: () -> Unit) : ViewModel()
 {
     private var active_workout : Workout? = null;
     private var is_workout_active : MutableStateFlow<Boolean> = MutableStateFlow(false);
@@ -37,7 +37,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
         {
             active_workout = exerciseDao.startWorkout(System.currentTimeMillis())
             is_workout_active.value = true
-
+            onStartListening()
 
             debug_thread_running = true;
             debug_data_gen_thread = Thread {
@@ -109,7 +109,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
                 }
             }
             debug_data_gen_thread?.start()
-
         }
     }
 
@@ -125,6 +124,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
             debug_thread_running = false;
             debug_data_gen_thread?.join()
 
+            onStopListening()
             exerciseDao.stopWorkout(workout, stop_time)
             is_workout_active.value = false
             active_workout = null
@@ -191,6 +191,11 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     val rollingHR = rolling_hr.asStateFlow()
     fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
     {
+        if(active_workout == null)
+        {
+            return
+        }
+
         val percent_hrr = calculatePercentHRR(value, UserRestingHeartRate.toFloat(), UserMaxHeartRate.toFloat())
 
         exerciseDao.insertHRSample(workout_id, time_stamp, value, percent_hrr)
@@ -201,6 +206,11 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     val rollingENMO = rolling_enmo.asStateFlow()
     fun InsertAccelSample(workout_id: Int, time_stamp: Long, value_x: Float, value_y: Float, value_z: Float)
     {
+        if(active_workout == null)
+        {
+            return
+        }
+
         val enmo = ExerciseDataCalculator.calculateENMO(value_x, value_y, value_z)
         exerciseDao.insertAccelSample(workout_id, time_stamp, value_x, value_y, value_z, enmo)
         rolling_enmo.value = rolling_enmo.value.drop(1) + enmo
@@ -211,6 +221,11 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     val rollingECG = rolling_ecg.asStateFlow()
     fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
     {
+        if(active_workout == null)
+        {
+            return
+        }
+
         exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
         rolling_ecg.value = rolling_ecg.value.drop(1) + value_mv
     }
