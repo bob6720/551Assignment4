@@ -108,10 +108,6 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(
                                 modifier = Modifier.padding(innerPadding),
                                 viewModel,
-                                onStartListening = {
-                                    Log.w(TAG, "connecting sensor")
-                                    connectToDevice()
-                                },
                                 connectionStatus = connectionStatus,
                                 device = device
                             )
