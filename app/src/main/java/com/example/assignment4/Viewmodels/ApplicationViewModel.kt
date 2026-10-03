@@ -186,7 +186,9 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
         }
     }
 
-    private val ROLLING_HR_WINDOW_SIZE = 10;
+    private val ROLLING_HR_WINDOW_SIZE = 100;
+    private val ROLLING_HR_AVG_WINDOW_SIZE = 10;
+    private var hr_avg_window = List(ROLLING_HR_AVG_WINDOW_SIZE, { 0.0f })
     private var rolling_hr = MutableStateFlow(List(ROLLING_HR_WINDOW_SIZE, { 0.0f }));
     val rollingHR = rolling_hr.asStateFlow()
     fun InsertHRSample(workout_id: Int, time_stamp: Long, value: Float)
@@ -198,8 +200,31 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
 
         val percent_hrr = calculatePercentHRR(value, UserRestingHeartRate.toFloat(), UserMaxHeartRate.toFloat())
 
+        // We smooth out the heart rate readings using a simple moving average. We insert the smoothed values into the
+        // list that is displayed on the chart but for the DB we insert the raw values instead.
         exerciseDao.insertHRSample(workout_id, time_stamp, value, percent_hrr)
-        rolling_hr.value = rolling_hr.value.drop(1) + value
+
+        hr_avg_window = hr_avg_window.drop(1) + value
+
+        var hr_avg = 0.0f
+        var hr_count = 0
+        for(hr_val in hr_avg_window)
+        {
+            if(hr_val == 0.0f)
+            {
+                continue
+            }
+
+            hr_avg += hr_val
+            hr_count++
+        }
+
+        if(hr_count > 0)
+        {
+            hr_avg /= hr_count.toFloat()
+        }
+
+        rolling_hr.value = rolling_hr.value.drop(1) + hr_avg
     }
     private val ROLLING_ENMO_WINDOW_SIZE = 10;
     private var rolling_enmo = MutableStateFlow(List(ROLLING_ENMO_WINDOW_SIZE, { 0.0f }));
@@ -217,8 +242,10 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
     }
 
     private val ROLLING_ECG_WINDOW_SIZE = 100;
+    private val ROLLING_ECG_AVG_WINDOW_SIZE = 5;
     private var rolling_ecg = MutableStateFlow(List(ROLLING_ECG_WINDOW_SIZE, { 0.0f }));
     val rollingECG = rolling_ecg.asStateFlow()
+    private var ecg_avg_window = List(ROLLING_ECG_AVG_WINDOW_SIZE, { 0.0f })
     fun InsertECGSample(workout_id: Int, time_stamp: Long, value_mv: Float)
     {
         if(active_workout == null)
@@ -227,7 +254,28 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
         }
 
         exerciseDao.insertECGSample(workout_id, time_stamp, value_mv)
-        rolling_ecg.value = rolling_ecg.value.drop(1) + value_mv
+
+        ecg_avg_window = ecg_avg_window.drop(1) + value_mv
+
+        var ecg_avg = 0.0f
+        var ecg_count = 0
+        for(ecg_val in ecg_avg_window)
+        {
+            if(ecg_val == 0.0f)
+            {
+                continue
+            }
+
+            ecg_avg += ecg_val
+            ecg_count++
+        }
+
+        if(ecg_count > 0)
+        {
+            ecg_avg /= ecg_count.toFloat()
+        }
+
+        rolling_ecg.value = rolling_ecg.value.drop(1) + ecg_avg
     }
 
     // From the settings, or defaults if these aren't set.

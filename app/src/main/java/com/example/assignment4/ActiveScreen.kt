@@ -87,34 +87,15 @@ fun ActiveScreen(
 
                 drawPath(path, Color.Blue, style = Stroke(width = 3f))
 
-                drawLine(
-                    Color.Black,
-                    start = Offset(left_offset, inner_height),
-                    end = Offset(inner_width + left_offset, inner_height),
-                    strokeWidth = 10f
-                )
-                drawLine(
-                    Color.Black,
-                    start = Offset(left_offset, 0f),
-                    end = Offset(left_offset, inner_height),
-                    strokeWidth = 10f
-                )
+                drawLine(Color.Black, start = Offset(left_offset, inner_height), end = Offset(inner_width + left_offset, inner_height), strokeWidth = 10f)
+                drawLine(Color.Black, start = Offset(left_offset, 0f), end = Offset(left_offset, inner_height), strokeWidth = 10f)
 
-                drawText(
-                    label_top,
-                    topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f)
-                )
+                drawText(label_top, topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f))
 
-                drawText(
-                    label_bottom,
-                    topLeft = Offset(
-                        left_offset - (label_bottom.size.width + 10f),
-                        inner_height - label_bottom.size.height
-                    )
-                )
+                drawText(label_bottom, topLeft = Offset(left_offset - (label_bottom.size.width + 10f), inner_height - label_bottom.size.height))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
         }
 
         item {
@@ -146,6 +127,41 @@ fun ActiveScreen(
 
                 drawText(label_bottom, topLeft = Offset(left_offset - (label_bottom.size.width + 10f), inner_height - label_bottom.size.height))
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        item {
+            Text(modifier = Modifier.fillMaxWidth(), text = "Movement Level", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+
+            val rolling_enmo = viewModel.rollingENMO.collectAsState()
+            Canvas(modifier = Modifier.fillMaxWidth().padding(2.dp).height(300.dp)) {
+                val inner_height = size.height * 0.8f
+
+                val maxValue = 400.0f
+                val label_top = textMeasurer.measure(String.format("%.2fmG", maxValue))
+                val label_bottom = textMeasurer.measure(text="0.00mG")
+
+                val left_offset = Math.max(label_top.size.width, label_bottom.size.width).toFloat() + 10.0f
+                val inner_width = size.width - left_offset
+
+                val path = Path()
+                rolling_enmo.value.forEachIndexed { index, value ->
+                    val x = (index * (inner_width / (rolling_enmo.value.size - 1))) + left_offset
+                    val y = (inner_height - (value / maxValue) * inner_height);
+                    if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                }
+                drawPath(path, Color.Red, style = Stroke(width = 3f))
+
+                drawLine(Color.Black, start = Offset(left_offset, inner_height), end = Offset(inner_width + left_offset, inner_height), strokeWidth = 10f)
+                drawLine(Color.Black, start = Offset(left_offset, 0f), end = Offset(left_offset, inner_height), strokeWidth = 10f)
+
+                drawText(label_top, topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f))
+
+                drawText(label_bottom, topLeft = Offset(left_offset - (label_bottom.size.width + 10f), inner_height - label_bottom.size.height))
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
