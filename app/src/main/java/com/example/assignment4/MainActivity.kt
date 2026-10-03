@@ -43,6 +43,12 @@ import kotlinx.coroutines.flow.subscribe
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+// Issue found with screen rotation going to home page, now fixed
+import androidx.activity.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+
+
 class MainActivity : ComponentActivity() {
 
     companion object {
@@ -73,7 +79,29 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var db : ExerciseDataStore;
     private lateinit var exerciseDao: ExerciseDao;
-    private lateinit var viewModel : ApplicationViewModel;
+
+    // Don't use
+    // private lateinit var viewModel : ApplicationViewModel;
+
+    // Use this
+    // Rotating the screen will keep you on whichever screen you were on
+    // The ViewModel and all its states will survive configuration changes
+    private val viewModel: ApplicationViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ApplicationViewModel(
+                    exerciseDao,
+                    resources,
+                    sharedPrefs,
+                    ::connectToDevice,
+                    ::disconnectDevice
+                ) as T
+            }
+        }
+    }
+
+
     private lateinit var sharedPrefs : SharedPreferences
 
     private lateinit var resources : Resources
@@ -93,7 +121,8 @@ class MainActivity : ComponentActivity() {
 
         resources = getResources()
 
-        viewModel = ApplicationViewModel(exerciseDao, resources, sharedPrefs, ::connectToDevice, ::disconnectDevice)
+        // Don't Use
+        // viewModel = ApplicationViewModel(exerciseDao, resources, sharedPrefs, ::connectToDevice, ::disconnectDevice)
 
         setupPolarCallback()
 

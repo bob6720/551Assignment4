@@ -22,10 +22,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.assignment4.Viewmodels.ApplicationViewModel
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
+// UI update
+import android.content.res.Configuration
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun SettingsScreen(
@@ -33,48 +38,187 @@ fun SettingsScreen(
     viewModel: ApplicationViewModel,
 )
 {
-    Column(modifier = modifier.fillMaxWidth().fillMaxHeight().padding(5.dp).background(color = Color.White))
-    {
-        TextButton(onClick = { viewModel.SwitchToHome() })
-        {
-            Text("< Back")
-        }
 
-        var resting_heart_rate by remember { mutableStateOf(viewModel.GetUserRestingHeartRate().toString()) }
-        var max_heart_rate by remember { mutableStateOf(viewModel.GetUserMaxHeartRate().toString()) }
+    // Suggest don't use underscores for variable
+    var resting_heart_rate by remember { mutableStateOf(viewModel.GetUserRestingHeartRate().toString()) }
+    var max_heart_rate by remember { mutableStateOf(viewModel.GetUserMaxHeartRate().toString()) }
 
-        Text("% HRR Settings", style = MaterialTheme.typography.headlineMedium)
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-        TextField(
-            value = resting_heart_rate,
-            onValueChange = {
-                if (it.isEmpty() || it.all { char -> char.isDigit() })
-                {
-                    resting_heart_rate = it
-                }
-            },
-            label =  { Text("Resting Heart Rate") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
+    val canSave = resting_heart_rate.isNotBlank() &&
+            max_heart_rate.isNotBlank() &&
+            resting_heart_rate.toIntOrNull() != null &&
+            max_heart_rate.toIntOrNull() != null
+
+    Box(modifier = modifier.fillMaxSize()) {
+        // Background image
+        Image(
+            painter = painterResource(id = R.drawable.placeholder),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
         )
 
-        TextField(
-            value = max_heart_rate,
-            onValueChange = {
-                if (it.isEmpty() || it.all { char -> char.isDigit() })
-                {
-                    max_heart_rate = it
-                }
-            },
-            label =  { Text("Maximum Heart Rate") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
+        // Grey overlay for box
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.55f),
+                            Color.Black.copy(alpha = 0.78f)
+                        )
+                    )
+                )
         )
 
-        Button(onClick = { viewModel.SetUserRestingHeartRate(resting_heart_rate.toInt()); viewModel.SetUserMaxHeartRate(max_heart_rate.toInt()) })
-        {
-            Text("Save")
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            // Top line ------------
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick = { viewModel.SwitchToHome() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White)
+                ) {
+                    Text(
+                        text = "← Back",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
 
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(72.dp))
+            }
+
+            // Rest of content --------------
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 24.dp))
+
+                // HRR Settings Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White.copy(alpha = 0.13f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 28.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Text(
+                            text = "% HRR Settings",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color.White
+                        )
+
+                        Text(
+                            text = "These values are used to calculate your Heart Rate Reserve zones.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.75f)
+                        )
+
+                        // Resting Heart Rate
+                        OutlinedTextField(
+                            value = resting_heart_rate,
+                            onValueChange = {
+                                if (it.isEmpty() || it.all { char -> char.isDigit() }) {
+                                    resting_heart_rate = it
+                                }
+                            },
+                            label = { Text("Resting Heart Rate (bpm)") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                                cursorColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        // Maximum Heart Rate
+                        OutlinedTextField(
+                            value = max_heart_rate,
+                            onValueChange = {
+                                if (it.isEmpty() || it.all { char -> char.isDigit() }) {
+                                    max_heart_rate = it
+                                }
+                            },
+                            label = { Text("Maximum Heart Rate (bpm)") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                                focusedLabelColor = MaterialTheme.colorScheme.primary,
+                                unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                                cursorColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Save button
+                        Button(
+                            onClick = {
+                                viewModel.SetUserRestingHeartRate(resting_heart_rate.toInt())
+                                viewModel.SetUserMaxHeartRate(max_heart_rate.toInt())
+                            },
+                            enabled = canSave,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text(
+                                text = "Save Settings",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
     }
 }
