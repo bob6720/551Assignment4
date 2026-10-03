@@ -16,7 +16,7 @@ import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 7)
+@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 9)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
@@ -49,7 +49,7 @@ interface ExerciseDao
     @Query("SELECT time_stamp, value_mv FROM ECG_Sample where workout_id = :workout_id")
     fun getECGSamples(workout_id: Int): List<ECG_SampleTuple>
 
-    @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min, hr_std_dev) VALUES (:time_stamp, :time_stamp, 0, 0, 0, 0)")
+    @Query("INSERT INTO Workout (start_time_stamp, end_time_stamp, hr_average, hr_max, hr_min, hr_std_dev, activity_level) VALUES (:time_stamp, :time_stamp, 0, 0, 0, 0, 0)")
     fun insertWorkout(time_stamp: Long)
 
     @Query("SELECT * FROM Workout WHERE id = (SELECT last_insert_rowid())")
@@ -65,17 +65,19 @@ interface ExerciseDao
     @Query("UPDATE Workout SET end_time_stamp = :time_stamp WHERE id = :workout_id")
     fun insertWorkoutStopTime(workout_id: Int, time_stamp: Long)
 
-    @Query("UPDATE Workout SET hr_average = :average_hr, hr_max = :max_hr, hr_min = :min_hr, hr_std_dev = :hr_std_dev WHERE id = :workout_id")
-    fun insertWorkoutStats(workout_id: Int, average_hr: Float, max_hr: Float, min_hr: Float, hr_std_dev: Float)
+    @Query("UPDATE Workout SET hr_average = :average_hr, hr_max = :max_hr, hr_min = :min_hr, hr_std_dev = :hr_std_dev, activity_level = :activity_level WHERE id = :workout_id")
+    fun insertWorkoutStats(workout_id: Int, average_hr: Float, max_hr: Float, min_hr: Float, hr_std_dev: Float, activity_level: Int)
 
     @Transaction
-    fun stopWorkout(workout: Workout, time_stamp: Long)
+    fun stopWorkout(resources: Resources, workout: Workout, time_stamp: Long)
     {
         insertWorkoutStopTime(workout.id, time_stamp)
-        val samples = getHRSamples(workout.id)
-        calculateWorkoutStats(workout, samples)
+        val hr_samples = getHRSamples(workout.id)
+        val accel_samples = getAccelSamples(workout.id)
 
-        insertWorkoutStats(workout.id, workout.hrAverage, workout.hrMax, workout.hrMin, workout.hrStdDev)
+        calculateWorkoutStats(resources, workout, hr_samples, accel_samples)
+
+        insertWorkoutStats(workout.id, workout.hrAverage, workout.hrMax, workout.hrMin, workout.hrStdDev, workout.activityLevel)
     }
 
     @Query("SELECT * FROM Workout WHERE start_time_stamp < end_time_stamp")
@@ -87,7 +89,7 @@ enum class ActivityIntensityClassification { NONE, LOW, MEDIUM, HIGH }
 
 object ExerciseDataCalculator
 {
-    fun calculateWorkoutStats(workout: Workout, samples: List<HR_SampleTuple>)
+    fun calculateWorkoutStats(resources: Resources, workout: Workout, samples: List<HR_SampleTuple>, accel_samples: List<AccelSampleTuple>)
     {
         var average = 0.0;
         var max = 0.0;
@@ -105,6 +107,7 @@ object ExerciseDataCalculator
         workout.hrAverage = average.toFloat()
         workout.hrMax = max.toFloat()
         workout.hrMin = min.toFloat()
+        workout.activityLevel = classifyActivitySliceIntensity(resources, samples, accel_samples).ordinal
     }
 
     fun calculateENMO(x: Float, y: Float, z: Float): Float

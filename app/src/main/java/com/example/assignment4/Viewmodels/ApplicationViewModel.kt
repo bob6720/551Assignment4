@@ -125,7 +125,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
             debug_data_gen_thread?.join()
 
             onStopListening()
-            exerciseDao.stopWorkout(workout, stop_time)
+            exerciseDao.stopWorkout(resources, workout, stop_time)
             is_workout_active.value = false
             active_workout = null
 
@@ -175,7 +175,7 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
         return active_workout;
     }
 
-    private var historic_workouts = MutableStateFlow<List<Workout>>(List(0,  { Workout(0, 0L, 0L, 0.0f, 0.0f, 0.0f, 0.0f) }));
+    private var historic_workouts = MutableStateFlow<List<Workout>>(List(0,  { Workout(0, 0L, 0L, 0.0f, 0.0f, 0.0f, 0.0f, 0) }));
     val historicWorkouts = historic_workouts.asStateFlow()
 
     init

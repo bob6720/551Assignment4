@@ -1,5 +1,6 @@
 package com.example.assignment4
 
+import androidx.annotation.RestrictTo
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -37,7 +38,7 @@ fun ActiveScreen(
     val localViewModel = viewModel.activeScreenViewModel as ActiveScreenViewModel
     val textMeasurer = rememberTextMeasurer()
 
-    LazyColumn(modifier = modifier.fillMaxWidth().fillMaxHeight().background(color = Color.White))
+    LazyColumn(modifier = modifier.fillMaxWidth().fillMaxHeight().padding(5.dp).background(color = Color.White))
     {
         val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
 
@@ -50,7 +51,7 @@ fun ActiveScreen(
 
         item {
             val minute_hr = localViewModel.minuteAvgHR.collectAsState()
-            Text(String.format("1-minute Average Heart Rate: %dbpm", minute_hr.value.toInt()))
+            Text(String.format("Average Heart Rate (1min): %dbpm", minute_hr.value.toInt()))
         }
 
         item {
@@ -87,8 +88,16 @@ fun ActiveScreen(
 
                 drawPath(path, Color.Blue, style = Stroke(width = 3f))
 
+                // Draw axis lines
                 drawLine(Color.Black, start = Offset(left_offset, inner_height), end = Offset(inner_width + left_offset, inner_height), strokeWidth = 10f)
                 drawLine(Color.Black, start = Offset(left_offset, 0f), end = Offset(left_offset, inner_height), strokeWidth = 10f)
+
+                // Draw threshold lines
+
+                val lower_threshold_y = inner_height - ((viewModel.GetUserRestingHeartRate().toFloat() / maxValue) * inner_height)
+                val upper_threshold_y = inner_height - ((viewModel.GetUserMaxHeartRate().toFloat() / maxValue) * inner_height)
+                drawLine(Color.Green, start = Offset(left_offset, lower_threshold_y), end = Offset(inner_width + left_offset, lower_threshold_y), strokeWidth = 5f)
+                drawLine(Color.Red, start = Offset(left_offset, upper_threshold_y), end = Offset(inner_width + left_offset, upper_threshold_y), strokeWidth = 5f)
 
                 drawText(label_top, topLeft = Offset(left_offset - (label_top.size.width + 10f), 0f))
 

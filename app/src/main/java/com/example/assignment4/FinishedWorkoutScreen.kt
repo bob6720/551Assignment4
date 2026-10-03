@@ -45,5 +45,13 @@ fun FinishedWorkoutScreen(
         Text(text = String.format("Max HR: %f", workout.hrMax))
         Text(text = String.format("Min HR: %f", workout.hrMin))
         Text(text = String.format("HR Standard deviation: %f", workout.hrStdDev))
+
+        when(ActivityIntensityClassification.values()[workout.activityLevel])
+        {
+            ActivityIntensityClassification.LOW -> Text(text = "Activity level: Low")
+            ActivityIntensityClassification.MEDIUM -> Text(text = "Activity level: Medium")
+            ActivityIntensityClassification.HIGH -> Text(text = "Activity level: High")
+            ActivityIntensityClassification.NONE -> Text(text = "Activity level: None")
+        }
     }
 }
