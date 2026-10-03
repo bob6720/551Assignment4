@@ -27,14 +27,14 @@ fun HistoryScreen(
 {
     val historicWorkouts = viewModel.historicWorkouts.collectAsState()
 
-    LazyColumn(modifier = modifier.fillMaxWidth().background(color = Color.White))
+    LazyColumn(modifier = modifier.fillMaxWidth().padding(5.dp).background(color = Color.White))
     {
         val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
 
         item {
-            Button(onClick = { viewModel.SwitchToHome() })
+            TextButton(onClick = { viewModel.SwitchToHome() })
             {
-                Text("Back")
+                Text("< Back")
             }
         }
 

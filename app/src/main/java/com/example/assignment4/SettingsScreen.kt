@@ -33,11 +33,11 @@ fun SettingsScreen(
     viewModel: ApplicationViewModel,
 )
 {
-    Column(modifier = modifier.fillMaxWidth().fillMaxHeight().background(color = Color.White))
+    Column(modifier = modifier.fillMaxWidth().fillMaxHeight().padding(5.dp).background(color = Color.White))
     {
-        Button(onClick = { viewModel.SwitchToHome() })
+        TextButton(onClick = { viewModel.SwitchToHome() })
         {
-            Text("Back")
+            Text("< Back")
         }
 
         var resting_heart_rate by remember { mutableStateOf(viewModel.GetUserRestingHeartRate().toString()) }

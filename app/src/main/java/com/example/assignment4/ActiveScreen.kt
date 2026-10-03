@@ -40,12 +40,12 @@ fun ActiveScreen(
 
     LazyColumn(modifier = modifier.fillMaxWidth().fillMaxHeight().padding(5.dp).background(color = Color.White))
     {
-        val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
+        //val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
 
         item {
-            Button(onClick = { viewModel.SwitchToHome() })
+            TextButton(onClick = { viewModel.SwitchToHome() })
             {
-                Text("Back")
+                Text("< Back")
             }
         }
 
@@ -70,6 +70,8 @@ fun ActiveScreen(
 
             val rolling_hr = viewModel.rollingHR.collectAsState()
             Canvas(modifier = Modifier.fillMaxWidth().padding(2.dp).height(300.dp)) {
+
+
                 val maxValue = 180
                 val inner_height = size.height * 0.8f
 
