@@ -49,7 +49,6 @@ fun ActiveScreen(
     val localViewModel = viewModel.activeScreenViewModel as ActiveScreenViewModel
     val textMeasurer = rememberTextMeasurer()
     //val timestamp_converter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withZone(ZoneId.systemDefault())
-    val minute_hr = localViewModel.minuteAvgHR.collectAsState()
     val minute_intensity = localViewModel.minuteIntensity.collectAsState()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -205,8 +204,7 @@ fun ActiveScreen(
                                 .fillMaxWidth()
                                 .height(if (isLandscape) 220.dp else 260.dp)
                         ) {
-                            // val rollingHr = viewModel.rollingHR.collectAsState()
-                            val maxValue = 180
+                            val maxValue = (rollingHr.value.maxOrNull() ?: 170f) + 10f
                             val inner_height = size.height * 0.8f
                             val label_top = textMeasurer.measure("${maxValue.toInt()} bpm")
                             val label_bottom = textMeasurer.measure(text = "0bpm")
@@ -231,18 +229,24 @@ fun ActiveScreen(
                             val maxY = inner_height - (viewModel.GetUserMaxHeartRate()
                                 .toFloat() / maxValue) * inner_height
 
-                            drawLine(
-                                Color(0xFF81C784).copy(alpha = 0.7f),
-                                Offset(left_offset, restingY),
-                                Offset(left_offset + innerWidth, restingY),
-                                2f
-                            )
-                            drawLine(
-                                Color(0xFFE57373).copy(alpha = 0.7f),
-                                Offset(left_offset, maxY),
-                                Offset(left_offset + innerWidth, maxY),
-                                2f
-                            )
+                            if(viewModel.GetUserRestingHeartRate() < maxValue)
+                            {
+                                drawLine(
+                                    Color(0xFF81C784).copy(alpha = 0.7f),
+                                    Offset(left_offset, restingY),
+                                    Offset(left_offset + innerWidth, restingY),
+                                    2f
+                                )
+                            }
+                            if(viewModel.GetUserMaxHeartRate() < maxValue)
+                            {
+                                drawLine(
+                                    Color(0xFFE57373).copy(alpha = 0.7f),
+                                    Offset(left_offset, maxY),
+                                    Offset(left_offset + innerWidth, maxY),
+                                    2f
+                                )
+                            }
 
                             // HR path
                             if (rollingHr.value.size > 1) {
@@ -273,10 +277,12 @@ fun ActiveScreen(
                             // Labels
                             drawText(
                                 label_top,
+                                color = Color.White,
                                 topLeft = Offset(left_offset - label_top.size.width - 8f, 0f)
                             )
                             drawText(
                                 label_bottom,
+                                color = Color.White,
                                 topLeft = Offset(
                                     left_offset - label_bottom.size.width - 8f,
                                     inner_height - label_bottom.size.height
@@ -304,7 +310,7 @@ fun ActiveScreen(
                             val inner_width = size.width - left_offset
 
 
-// Grid
+                            // Grid
                             for (i in 1..3) {
                                 val y = inner_height * (i / 4f)
                                 drawLine(
@@ -341,11 +347,13 @@ fun ActiveScreen(
 
                             drawText(
                                 label_top,
+                                color = Color.White,
                                 topLeft = Offset(left_offset - label_top.size.width - 8f, 0f)
                             )
 
                             drawText(
                                 label_bottom,
+                                color = Color.White,
                                 topLeft = Offset(
                                     left_offset - label_bottom.size.width - 8f,
                                     inner_height - label_bottom.size.height
@@ -364,7 +372,7 @@ fun ActiveScreen(
                                 .height(if (isLandscape) 220.dp else 260.dp)
                         ) {
                             val inner_height = size.height * 0.82f
-                            val maxValue = 400f
+                            val maxValue = (rollingEnmo.value.maxOrNull() ?: 380f) + 20f
                             val label_top = textMeasurer.measure("%.2fmG".format(maxValue))
                             val label_bottom = textMeasurer.measure("0.00mG")
                             val left_offset =
@@ -381,10 +389,6 @@ fun ActiveScreen(
                                     1f
                                 )
                             }
-
-
-
-
 
                             if (rollingEnmo.value.size > 1) {
                                 val path = Path()
@@ -411,11 +415,13 @@ fun ActiveScreen(
 
                                 drawText(
                                     label_top,
+                                    color = Color.White,
                                     topLeft = Offset(left_offset - label_top.size.width - 8f, 0f)
                                 )
 
                                 drawText(
                                     label_bottom,
+                                    color = Color.White,
                                     topLeft = Offset(
                                         left_offset - label_bottom.size.width - 8f,
                                         inner_height - label_bottom.size.height
