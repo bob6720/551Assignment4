@@ -47,7 +47,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     //latest sdk as of 24/09/26
-    val sdk_version = "8.3.0"
+    val sdk_version = "8.4.0"
     implementation("com.github.polarofficial:polar-ble-sdk:${sdk_version}")
 
     testImplementation(libs.junit)
