@@ -301,14 +301,13 @@ fun ActiveScreen(
                                 .height(if (isLandscape) 220.dp else 260.dp)
                         ) {
                             val inner_height = size.height * 0.8f
-                            val maxValue = 2.0f
+                            val maxValue = (rollingEcg.value.maxOrNull() ?: 2.0f) * 1.1f
                             val label_top = textMeasurer.measure("%.2fuV".format(maxValue))
                             val label_bottom = textMeasurer.measure("0.00uV")
                             val left_offset =
                                 Math.max(label_top.size.width, label_bottom.size.width)
                                     .toFloat() + 12f
                             val inner_width = size.width - left_offset
-
 
                             // Grid
                             for (i in 1..3) {
