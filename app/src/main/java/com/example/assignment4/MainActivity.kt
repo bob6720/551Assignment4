@@ -50,6 +50,7 @@ import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 
 
 class MainActivity : ComponentActivity() {
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
     private var connectionStatus by mutableStateOf("Disconnected")
     private var device by mutableStateOf("")
     private var searchJob: Job? = null
+    private var slowSampling: Boolean = false
 
     //by default all api features are enabled.
     //we can get rid of the ones we arent using.
@@ -209,10 +211,22 @@ class MainActivity : ComponentActivity() {
                                         }
 
                                         CoroutineScope(Dispatchers.IO).launch {
+
+                                            var lastTime = 0L
                                             for(sample in hrData.samples)
                                             {
-                                                //Log.d(TAG, "HR sample: ${sample.hr} bpm")
-                                                viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(), sample.hr.toFloat())
+                                                slowSampling = !slowSampling
+                                                if (slowSampling){
+                                                    continue
+                                                }
+//                                                Log.d(TAG, "HR sample: ${sample.hr} bpm")
+
+                                                val currentTime = System.currentTimeMillis()
+                                                val time = if (currentTime <= lastTime) lastTime + 1 else currentTime
+                                                lastTime = time
+
+                                                Log.d(TAG, "$time")
+                                                viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, time, sample.hr.toFloat())
                                             }
                                         }
                                     }
@@ -229,17 +243,11 @@ class MainActivity : ComponentActivity() {
                                             return@collect
                                         }
 
-                                        CoroutineScope(Dispatchers.IO).launch {
-                                            for(sample in accData.samples) {
-                                                //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
-                                                viewModel.InsertAccelSample(
-                                                    viewModel.GetActiveWorkout()!!.id,
-                                                    System.currentTimeMillis(),
-                                                    sample.x.toFloat(),
-                                                    sample.y.toFloat(),
-                                                    sample.z.toFloat()
-                                                )
-                                            }
+                                        for(sample in accData.samples)
+                                        {
+                                            //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                            viewModel.InsertAccelSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(),
+                                                sample.x.toFloat(), sample.y.toFloat(), sample.z.toFloat())
                                         }
                                     }
                             }
