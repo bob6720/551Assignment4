@@ -61,7 +61,7 @@ fun ActiveScreen(
     Box(modifier = modifier.fillMaxSize()) {
         // Background
         Image(
-            painter = painterResource(id = R.drawable.placeholder),
+            painter = painterResource(id = R.drawable.placeholder2),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
