@@ -28,9 +28,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
 
     var activeScreenViewModel : ScreenViewModel? = null
 
-    var debug_thread_running = false;
-    var debug_data_gen_thread : Thread? = null;
-
     fun StartWorkout()
     {
         viewModelScope.launch(Dispatchers.IO)
@@ -38,77 +35,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
             active_workout = exerciseDao.startWorkout(System.currentTimeMillis())
             is_workout_active.value = true
             onStartListening()
-
-            debug_thread_running = true;
-            debug_data_gen_thread = Thread {
-                var ecg_tick = 0
-                var hr_tick = 0
-                var stage = ActivityIntensityClassification.LOW
-                var stage_tick = 0
-
-                while(debug_thread_running)
-                {
-                    Thread.sleep(10)
-
-                    if(hr_tick == 0)
-                    {
-                        var base_hr = 60;
-                        var accel_mult = 0.0f;
-
-                        if(stage == ActivityIntensityClassification.LOW)
-                        {
-                            base_hr = 60
-                            accel_mult = 1.0f
-                        }
-                        else if(stage == ActivityIntensityClassification.MEDIUM)
-                        {
-                            base_hr = 80
-                            accel_mult = 2.0f
-                        }
-                        else if(stage == ActivityIntensityClassification.HIGH)
-                        {
-                            base_hr = 105
-                            accel_mult = 4.0f
-                        }
-
-                        InsertHRSample(
-                            active_workout?.id ?: 0,
-                            System.currentTimeMillis(),
-                            (base_hr..(base_hr + 30)).random().toFloat()
-                        )
-
-                        InsertAccelSample(
-                            active_workout?.id ?: 0,
-                            System.currentTimeMillis(),
-                            (0..100).random().toFloat() * accel_mult,
-                            (0..100).random().toFloat() * accel_mult,
-                            1000 + ((0..100).random().toFloat() * accel_mult)
-                        )
-
-                        stage_tick = (stage_tick + 1) % 100
-
-                        if(stage_tick == 0)
-                        {
-                            stage = ActivityIntensityClassification.values().random()
-                            Log.d("A4", "Stage: $stage")
-                        }
-                    }
-
-                    val is_wave_stage = ecg_tick > 190
-
-                    var ecg_value_mv = 0.1f;
-                    if(is_wave_stage)
-                    {
-                        val tick_progress = ((ecg_tick - 190).toDouble() * Math.PI.toDouble()) / 10.0;
-                        ecg_value_mv += (Math.sin(tick_progress) * 1.2).toFloat()
-                    }
-
-                    InsertECGSample(active_workout?.id ?: 0, System.currentTimeMillis(), ecg_value_mv)
-                    ecg_tick = (ecg_tick + 1) % 200
-                    hr_tick = (hr_tick + 1) % 100
-                }
-            }
-            debug_data_gen_thread?.start()
         }
     }
 
@@ -121,9 +47,6 @@ class ApplicationViewModel(private val exerciseDao: ExerciseDao, val resources: 
 
         viewModelScope.launch(Dispatchers.IO)
         {
-            debug_thread_running = false;
-            debug_data_gen_thread?.join()
-
             onStopListening()
             exerciseDao.stopWorkout(resources, workout, stop_time)
             is_workout_active.value = false
