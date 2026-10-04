@@ -47,6 +47,9 @@ import java.util.UUID
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 
 
 class MainActivity : ComponentActivity() {
@@ -205,10 +208,12 @@ class MainActivity : ComponentActivity() {
                                             return@collect
                                         }
 
-                                        for(sample in hrData.samples)
-                                        {
-                                            //Log.d(TAG, "HR sample: ${sample.hr} bpm")
-                                            viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(), sample.hr.toFloat())
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            for(sample in hrData.samples)
+                                            {
+                                                //Log.d(TAG, "HR sample: ${sample.hr} bpm")
+                                                viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(), sample.hr.toFloat())
+                                            }
                                         }
                                     }
                             }
@@ -224,11 +229,17 @@ class MainActivity : ComponentActivity() {
                                             return@collect
                                         }
 
-                                        for(sample in accData.samples)
-                                        {
-                                            //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
-                                            viewModel.InsertAccelSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(),
-                                                sample.x.toFloat(), sample.y.toFloat(), sample.z.toFloat())
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            for(sample in accData.samples) {
+                                                //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                                viewModel.InsertAccelSample(
+                                                    viewModel.GetActiveWorkout()!!.id,
+                                                    System.currentTimeMillis(),
+                                                    sample.x.toFloat(),
+                                                    sample.y.toFloat(),
+                                                    sample.z.toFloat()
+                                                )
+                                            }
                                         }
                                     }
                             }
@@ -244,12 +255,16 @@ class MainActivity : ComponentActivity() {
                                             return@collect
                                         }
 
-                                        for(sample in ecgData.samples)
-                                        {
-                                            if(sample is EcgSample)
-                                            {
-                                                //Log.d(TAG, "ECG sample: ${sample.voltage}")
-                                                viewModel.InsertECGSample(viewModel.GetActiveWorkout()!!.id, sample.timeStamp, sample.voltage.toFloat())
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            for (sample in ecgData.samples) {
+                                                if (sample is EcgSample) {
+                                                    //Log.d(TAG, "ECG sample: ${sample.voltage}")
+                                                    viewModel.InsertECGSample(
+                                                        viewModel.GetActiveWorkout()!!.id,
+                                                        sample.timeStamp,
+                                                        sample.voltage.toFloat()
+                                                    )
+                                                }
                                             }
                                         }
                                     }
