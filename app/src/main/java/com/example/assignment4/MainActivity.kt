@@ -199,67 +199,102 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch {
                         try {
                             val streamTypes = api.getAvailableOnlineStreamDataTypes(identifier)
-
-                            if(PolarBleApi.PolarDeviceDataType.HR in streamTypes)
-                            {
+                            if (PolarBleApi.PolarDeviceDataType.HR in streamTypes) {
                                 api.startHrStreaming(identifier)
                                     .catch { error -> Log.e(TAG, "HR stream failed", error) }
                                     .collect { hrData ->
-                                        if(viewModel.GetActiveWorkout() == null)
-                                        {
+                                        if (viewModel.GetActiveWorkout() == null) {
                                             return@collect
                                         }
 
                                         CoroutineScope(Dispatchers.IO).launch {
 
                                             var lastTime = 0L
-                                            for(sample in hrData.samples)
-                                            {
+                                            for (sample in hrData.samples) {
                                                 slowSampling = !slowSampling
-                                                if (slowSampling){
+                                                if (slowSampling) {
                                                     continue
                                                 }
 //                                                Log.d(TAG, "HR sample: ${sample.hr} bpm")
 
                                                 val currentTime = System.currentTimeMillis()
-                                                val time = if (currentTime <= lastTime) lastTime + 1 else currentTime
+                                                val time =
+                                                    if (currentTime <= lastTime) lastTime + 1 else currentTime
                                                 lastTime = time
 
                                                 Log.d(TAG, "$time")
-                                                viewModel.InsertHRSample(viewModel.GetActiveWorkout()!!.id, time, sample.hr.toFloat())
+                                                viewModel.InsertHRSample(
+                                                    viewModel.GetActiveWorkout()!!.id,
+                                                    time,
+                                                    sample.hr.toFloat()
+                                                )
                                             }
                                         }
                                     }
                             }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to query stream types", e)
+                        }
+                    }
 
-                            if(PolarBleApi.PolarDeviceDataType.ACC in streamTypes)
-                            {
-                                val accel_settings : Map<PolarSensorSetting.SettingType, Int> = mapOf(PolarSensorSetting.SettingType.SAMPLE_RATE to 25);
-                                api.startAccStreaming(identifier, PolarSensorSetting(accel_settings))
+                    lifecycleScope.launch {
+                        val streamTypes = api.getAvailableOnlineStreamDataTypes(identifier)
+
+                        try {
+                            if (PolarBleApi.PolarDeviceDataType.ACC in streamTypes) {
+                                val accel_settings: Map<PolarSensorSetting.SettingType, Int> =
+                                    mapOf(PolarSensorSetting.SettingType.SAMPLE_RATE to 25);
+                                api.startAccStreaming(
+                                    identifier, PolarSensorSetting(accel_settings)
+                                )
                                     .catch { error -> Log.e(TAG, "ACC stream failed", error) }
                                     .collect { accData ->
-                                        if(viewModel.GetActiveWorkout() == null)
-                                        {
+                                        if (viewModel.GetActiveWorkout() == null) {
                                             return@collect
                                         }
 
-                                        for(sample in accData.samples)
-                                        {
+                                        for (sample in accData.samples) {
                                             //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
-                                            viewModel.InsertAccelSample(viewModel.GetActiveWorkout()!!.id, System.currentTimeMillis(),
-                                                sample.x.toFloat(), sample.y.toFloat(), sample.z.toFloat())
+                                            viewModel.InsertAccelSample(
+                                                viewModel.GetActiveWorkout()!!.id,
+                                                System.currentTimeMillis(),
+                                                sample.x.toFloat(),
+                                                sample.y.toFloat(),
+                                                sample.z.toFloat()
+                                            )
+                                            CoroutineScope(Dispatchers.IO).launch {
+                                                for (sample in accData.samples) {
+                                                    //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                                    viewModel.InsertAccelSample(
+                                                        viewModel.GetActiveWorkout()!!.id,
+                                                        System.currentTimeMillis(),
+                                                        sample.x.toFloat(),
+                                                        sample.y.toFloat(),
+                                                        sample.z.toFloat()
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                             }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to query stream types", e)
+                        }
+                    }
 
-                            if(PolarBleApi.PolarDeviceDataType.ECG in streamTypes)
-                            {
-                                val ecg_settings = api.requestStreamSettings(identifier, PolarBleApi.PolarDeviceDataType.ECG)
+                    lifecycleScope.launch {
+                        val streamTypes = api.getAvailableOnlineStreamDataTypes(identifier)
+
+                        try {
+                            if (PolarBleApi.PolarDeviceDataType.ECG in streamTypes) {
+                                val ecg_settings = api.requestStreamSettings(
+                                    identifier,
+                                    PolarBleApi.PolarDeviceDataType.ECG
+                                )
                                 api.startEcgStreaming(identifier, ecg_settings.maxSettings())
-                                    .catch {  error -> Log.e(TAG, "ECG stream failed", error)  }
+                                    .catch { error -> Log.e(TAG, "ECG stream failed", error) }
                                     .collect { ecgData ->
-                                        if(viewModel.GetActiveWorkout() == null)
-                                        {
+                                        if (viewModel.GetActiveWorkout() == null) {
                                             return@collect
                                         }
 
@@ -277,15 +312,6 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                             }
-
-//                            if(PolarBleApi.PolarDeviceDataType.PPI in streamTypes)
-//                            {
-//                                api.startPpiStreaming(identifier)
-//                                    .catch { error -> Log.e(TAG, "PPI stream failed", error) }
-//                                    .collect { ppiData ->
-//                                        Log.d(TAG, "PPI samples: ${ppiData.samples.size}")
-//                                    }
-//                            }
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to query stream types", e)
                         }

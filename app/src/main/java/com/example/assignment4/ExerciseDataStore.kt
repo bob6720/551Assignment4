@@ -16,7 +16,7 @@ import com.example.assignment4.Entities.HR_SampleTuple
 import com.example.assignment4.Entities.Workout
 import com.example.assignment4.ExerciseDataCalculator.calculateWorkoutStats
 
-@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 9)
+@Database(entities = [HR_Sample::class, AccelSample::class, ECG_Sample::class, Workout::class], version = 10)
 abstract class ExerciseDataStore : RoomDatabase()
 {
     abstract fun exerciseDao(): ExerciseDao
