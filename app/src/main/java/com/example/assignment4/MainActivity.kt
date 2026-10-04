@@ -82,7 +82,6 @@ class MainActivity : ComponentActivity() {
             )
         )
     }
-
     private lateinit var db : ExerciseDataStore;
     private lateinit var exerciseDao: ExerciseDao;
 
@@ -389,6 +388,7 @@ class MainActivity : ComponentActivity() {
                 .collect { polarDeviceInfo ->
                     Log.d(TAG, "FOUND DEVICE: ${polarDeviceInfo.deviceId} (${polarDeviceInfo.name})")
                     try {
+                        api.enableSDKMode(polarDeviceInfo.deviceId)
                         api.connectToDevice(polarDeviceInfo.deviceId)
                     } catch (e: Exception) {
                         Log.e(TAG, "Connect to ${polarDeviceInfo.deviceId} failed", e)
