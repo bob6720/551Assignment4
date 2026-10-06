@@ -62,8 +62,6 @@ class MainActivity : ComponentActivity() {
     private var connectionStatus by mutableStateOf("Disconnected")
     private var device by mutableStateOf("")
     private var searchJob: Job? = null
-    private val slowSamplingReset = 8
-    private var slowSampling = slowSamplingReset
 
     //by default all api features are enabled.
     //we can get rid of the ones we arent using.
@@ -211,12 +209,6 @@ class MainActivity : ComponentActivity() {
 
                                             var lastTime = 0L
                                             for (sample in hrData.samples) {
-
-                                                slowSampling--
-                                                if (slowSampling != 0) {
-                                                    slowSampling = slowSamplingReset
-                                                    continue
-                                                }
 //                                                Log.d(TAG, "HR sample: ${sample.hr} bpm")
 
                                                 val currentTime = System.currentTimeMillis()
@@ -255,26 +247,16 @@ class MainActivity : ComponentActivity() {
                                             return@collect
                                         }
 
-                                        for (sample in accData.samples) {
-                                            //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
-                                            viewModel.InsertAccelSample(
-                                                viewModel.GetActiveWorkout()!!.id,
-                                                System.currentTimeMillis(),
-                                                sample.x.toFloat(),
-                                                sample.y.toFloat(),
-                                                sample.z.toFloat()
-                                            )
-                                            CoroutineScope(Dispatchers.IO).launch {
-                                                for (sample in accData.samples) {
-                                                    //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
-                                                    viewModel.InsertAccelSample(
-                                                        viewModel.GetActiveWorkout()!!.id,
-                                                        System.currentTimeMillis(),
-                                                        sample.x.toFloat(),
-                                                        sample.y.toFloat(),
-                                                        sample.z.toFloat()
-                                                    )
-                                                }
+                                        CoroutineScope(Dispatchers.IO).launch {
+                                            for (sample in accData.samples) {
+                                                //Log.d(TAG, "ACC sample: ${sample.x}, ${sample.y}, ${sample.z}")
+                                                viewModel.InsertAccelSample(
+                                                    viewModel.GetActiveWorkout()!!.id,
+                                                    System.currentTimeMillis(),
+                                                    sample.x.toFloat(),
+                                                    sample.y.toFloat(),
+                                                    sample.z.toFloat()
+                                                )
                                             }
                                         }
                                     }
